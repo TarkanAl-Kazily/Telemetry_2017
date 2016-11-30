@@ -18,6 +18,9 @@
 //
 // Serial data confirmations are desired to increase the reliability of
 // recieving the correct message to send from the Diagnostics MCU.
+//
+// Call Signs will need to be sent in the message data fields. At least
+// once every ten minutes
 // ===============
 
 
@@ -28,6 +31,8 @@
 #define CLIENT_ADDRESS 1
 #define SERVER_ADDRESS 2
 
+#define MAX_DATA_SIZE 128 // Must be less than RH_RF22_MAX_MESSAGE_LEN (255)
+
 // Singleton instance of the radio driver
 RH_RF22 driver;
 
@@ -36,10 +41,52 @@ RHReliableDatagram manager(driver, CLIENT_ADDRESS);
 
 void setup()
 {
-  Serial.begin(9600);
-  if (!manager.init())
-    Serial.println("init failed");
-  // Defaults after init are 434.0MHz, 0.05MHz AFC pull-in, modulation FSK_Rb2_4Fd36
+    Serial.begin(9600);
+    char received[20];
+    do {
+        // Send a message to the Diagnostic MCU to ensure
+        // serial communication is connected
+        Serial.write("ARDUINO_READY");
+        // Wait until recieve a message over Serial
+        while (!Serial.available()) {
+            // Add code to blink an LED to show that the device is attempting to
+            // connect to the Diagnostics MCU
+        }
+        // Check to see if received "DIAGNOSTICS_READY"
+        Serial.readBytes(recieved, sizeof(received));
+
+    } while (!recieved.equals("DIAGNOSTICS_READY"));
+    // Connection has been established
+    Serial.write("CONNECTED");
+    // Set LED to be solid
+    delay(2000);
+
+    if (!manager.init()) {
+        //Serial.println("init failed");
+        Serial.write("TRANSMITTER_INIT_FAILED");
+        // Set LED to be off
+    }
+
+    uint8_t connect_msg[] = "ARDUINO_TRANSMITTING";
+    boolean connected = false;
+    do {
+        // Send a message with automatic confirmation, and then wait for reply
+        // message
+        if (manager.sendtoWait(connect_msg, sizeof(connect_msg), SERVER_ADDRESS)) {
+            uint8_t len = sizeof(buf);
+            uint8_t from;
+            if (manager.recvfromAckTimeout(buf, &len, 2000, &from)) {
+                String received_msg = (char *) buf;
+                if (received_msg.startsWith("GROUND_CONFIRM")) {
+                    // Recieved confirmation of connection
+                    connected = true;
+                }
+            } else {
+                // no reply, still not connected.
+            }
+        }
+    } while (!connected);
+    // Defaults after init are 434.0MHz, 0.05MHz AFC pull-in, modulation FSK_Rb2_4Fd36
 }
 
 uint8_t data[] = "Hello World!";
@@ -48,27 +95,32 @@ uint8_t buf[RH_RF22_MAX_MESSAGE_LEN];
 
 void loop()
 {
-  Serial.println("Sending to rf22_reliable_datagram_server");
+    //Serial.println("Sending to rf22_reliable_datagram_server");
+    char diagnostic_data[MAX_DATA_SIZE];
+    if (Serial.available()) {
+        getDiagnosticData(diagnostic_data, MAX_DATA_SIZE);
+    } else {
+        diagnostic_data = "NO_NEW_DATA";
+    }
 
-  // Send a message to manager_server
-  if (manager.sendtoWait(data, sizeof(data), SERVER_ADDRESS))
-  {
-    // Now wait for a reply from the server
-    uint8_t len = sizeof(buf);
-    uint8_t from;
-    if (manager.recvfromAckTimeout(buf, &len, 2000, &from))
+    // Send a message to manager_server
+    if (manager.sendtoWait(data, sizeof(data), SERVER_ADDRESS))
     {
-      Serial.print("got reply from : 0x");
-      Serial.print(from, HEX);
-      Serial.print(": ");
-      Serial.println((char*)buf);
+        // LED Output to show that message sent
     }
     else
-    {
-      Serial.println("No reply, is rf22_reliable_datagram_server running?");
+    //Serial.println("sendtoWait failed");
+    delay(100);
+}
+
+void getDiagnosticData(char &array, int len) {
+    char start = Serial.read();
+    // While start isn't the <stx> ascii character
+    while (start != 2 && Serial.available()) {
+        start = Serial.read();
     }
-  }
-  else
-    Serial.println("sendtoWait failed");
-  delay(500);
+    // Read everything in Serial buffer until reading the <etx> character
+    Serial.readBytesUntil((char) 3, array, len);
+    // May need to trim off the <etx> character - depending on
+    // how the method is implemented.
 }
