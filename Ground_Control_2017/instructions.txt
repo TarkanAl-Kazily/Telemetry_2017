@@ -1,0 +1,7 @@
+●   Download all files
+●   Start display.py to open display window
+●   Click on the window to begin data collection from input.txt 
+●   Start inputTest1.py to begin interesting data generation
+●   At any time click the blue “P” at the bottom of the display window to pause data collection. (and then click anywhere to resume)
+●   Click the red box at the bottom of the display window to end program. 
+●   The program should have created a new file where all of the received data was recorded. 
