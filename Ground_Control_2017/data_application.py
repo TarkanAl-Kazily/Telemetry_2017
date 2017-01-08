@@ -16,6 +16,7 @@ class Application(tk.Frame):
 		self.grid(sticky=tk.N+tk.S+tk.E+tk.W)
 		self.createWidgets()
 		self.threads = [] #house all the threads
+		master.minsize(width=666, height=666)
 		
 	def createWidgets(self):
 		top=self.winfo_toplevel() 
@@ -87,7 +88,7 @@ app = App()
 app.start()
 """
 
-app = Application()
+app = Application(root)
 app.master.title('SARP Data Dominator')
 app.mainloop()
 

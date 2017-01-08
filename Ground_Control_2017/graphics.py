@@ -217,7 +217,7 @@ class GraphWin(tk.Canvas):
         tk.Canvas.__init__(self, master, width=width, height=height,
                            highlightthickness=0, bd=0)
         #self.master.title(title)
-        self.pack()
+        #self.pack()
         #master.resizable(0,0)
         self.foreground = "black"
         self.items = []
