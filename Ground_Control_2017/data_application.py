@@ -60,33 +60,9 @@ class Application(tk.Frame):
 def test_thread():
 	t = threading.currentThread()
 	while getattr(t, "do_run", True):
-		print "Hello faggot"
+		print "Hello"
 		time.sleep(3)
-		
-"""
-class App(threading.Thread):
-	def __init__(self):
-		threading.Thread.__init__(self)
-		#self.start()
 	
-	def callback(self):
-		self.root.quit()
-		
-	def run(self):
-		self.root = tk.Tk()
-		self.root.protocol("WM_DELETE_WINDOW", self.callback)
-		
-		self.subapp = Application(self.root)
-		self.subapp.master.title('SARP Data Dominator')
-		self.subapp.mainloop()
-		self.root.withdraw()
-		#label = tk.Label(self.root, text="Hello Worldddd")
-		#label.pack()
-		#self.root.mainloop()
-			
-app = App()
-app.start()
-"""
 
 app = Application(root)
 app.master.title('SARP Data Dominator')
