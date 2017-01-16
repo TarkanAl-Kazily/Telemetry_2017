@@ -118,6 +118,14 @@ class Application(tk.Frame):
 		
 		self.addWinB = tk.Button(self, text='New Window', command=self.insertWindow)
 		self.addWinB.grid(row=0, column=2, sticky=tk.N+tk.E)
+		
+	def quit(self):
+		try:
+			self.stop_test()
+		except:
+			pass
+		
+		tk.Frame.quit(self)
 	
 	def insertWindow(self):
 		
@@ -132,7 +140,7 @@ class Application(tk.Frame):
 		self.winStartB.grid(row=1, column=1)
 		
 		#pause Test button
-		self.winPauseB = tk.Button(self, text='pause', command=self.pause_test)
+		self.winPauseB = tk.Button(self, text='Pause', command=self.pause_test)
 		self.winPauseB.grid(row=1, column=2)
 		
 		#Stop Test button

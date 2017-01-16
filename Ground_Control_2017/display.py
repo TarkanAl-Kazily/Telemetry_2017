@@ -163,10 +163,10 @@ class DataWindow(threading.Thread):
                 print("TIME! " + str(round(time.time() - timeStart, 3)))
             while time.time() - timeStart < sampleTime:
                 time.sleep(0.01)
-                
+            
+            
             while self.paused.isSet():
-                #self.paused.wait(timeout=None)
-                print "paused"
+                time.sleep(0.001)
         print("Exited Thread and Stopped")  
             
         
