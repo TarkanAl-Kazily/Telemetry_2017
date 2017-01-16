@@ -114,12 +114,12 @@ class Application(tk.Frame):
 		self.columnconfigure(0, weight=1) 
 		
 		self.quitB = tk.Button(self, text='Quit', command=self.quit)
-		self.quitB.grid(row=0, column=1, sticky=tk.N+tk.E)
+		self.quitB.grid(row=0, column=3, sticky=tk.N+tk.E)
 		
-		self.addWinB = tk.Button(self, text='New Window', command=self.insert_shit)
-		self.addWinB.grid(row=0, column=0, sticky=tk.N+tk.E)
+		self.addWinB = tk.Button(self, text='New Window', command=self.insertWindow)
+		self.addWinB.grid(row=0, column=2, sticky=tk.N+tk.E)
 	
-	def insert_shit(self):
+	def insertWindow(self):
 		
 		#Set up window and display
 		self.newWin = gw.GraphWin("Data",1200,600, master=self)
@@ -127,11 +127,17 @@ class Application(tk.Frame):
 		disp.setUp(self.newWin)
 		self.activeWindow = self.newWin
 		
+		#Start Test button
 		self.winStartB = tk.Button(self, text='Start Test', command=self.start_test)
-		self.winStartB.grid(row=1, column=0)
+		self.winStartB.grid(row=1, column=1)
 		
+		#pause Test button
+		self.winPauseB = tk.Button(self, text='pause', command=self.pause_test)
+		self.winPauseB.grid(row=1, column=2)
+		
+		#Stop Test button
 		self.winStopB = tk.Button(self, text='Stop', command=self.stop_test)
-		self.winStopB.grid(row=1, column=1)
+		self.winStopB.grid(row=1, column=3)
 		
 		self.dWin = disp.DataWindow(kwargs={'window':self.activeWindow})
 		root.update()
@@ -141,12 +147,16 @@ class Application(tk.Frame):
 		if(not self.tm.contains(name)):
 			t1 = self.dWin
 			t1.start()
+			#self.winStartB.set
 			self.tm.addThread("Data Window", t1)
 		else:
 			self.tm.resumeThread("Data Window")
 		
-	def stop_test(self):
+	def pause_test(self):
 		self.tm.pauseThread("Data Window")
+		
+	def stop_test(self):
+		self.tm.stopThread("Data Window")
 	
 def test_thread():
 	t = threading.currentThread()
