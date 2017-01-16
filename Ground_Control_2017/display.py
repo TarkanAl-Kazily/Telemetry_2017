@@ -28,10 +28,12 @@ sampleTime = 0.5 # time between samples in seconds
 output = open(outputFile, "a")
 
 
-class DataWindow():
-    def __init__(self, window):
-        #threading.Thread.__init__(self)
-        #self.dataWin = gw.GraphWin("Data",1200,600, master=Master)
+class DataWindow(threading.Thread):
+    def __init__(self, group=None, target=None, name=None,
+                 args=(), kwargs=None, verbose=None):
+        
+        super(DataWindow, self).__init__(group=group, target=target, 
+                                      name=name, verbose=verbose)
         # initialize tracked data and stuff
         self.speed = 0 # m/s
         self.altitude = 0 # m
@@ -44,24 +46,45 @@ class DataWindow():
         self.displayPoints = [self.origin,] # the data displayed
         self.displayLines = [] # the connecting lines
         
+        #Grab Args
+        self.args=args
+        self.kwargs=kwargs
+        
+        #IMPLEMENT GRABBING WINDOW FROM KWARGS
+        self.window = kwargs['window']
+        
         # initialize data fields
-        self.altData = DataField(window, Point(350,75), "(m)")
+        self.altData = DataField(self.window, Point(350,75), "(m)")
         self.altData.line.setSize(32)
-        self.speedData = DataField(window, Point(780,30), "(m/s)")
-        self.acclData = DataField(window, Point(1050,30), "(m/s^2)")
-        self.aTempData = DataWithBar(window, Point(950,200), "*C",Point(750,190),Point(1150,210), aTempMax, "red")
-        self.bTempData = DataWithBar(window, Point(950,250), "*C",Point(750,240),Point(1150,260), bTempMax, "red")
-        self.cTempData = DataWithBar(window, Point(950,300), "*C",Point(750,290),Point(1150,310), bTempMax, "red")
-        self.yLabel = DataField(window, Point(40,225), "")
-        self.xLabel = DataField(window, Point(540,545), "")
-        self.press = DataWithBar(window,Point(975,100),"(atm)",Point(775,90),Point(1175,110),pressMax, "blue")
+        self.speedData = DataField(self.window, Point(780,30), "(m/s)")
+        self.acclData = DataField(self.window, Point(1050,30), "(m/s^2)")
+        self.aTempData = DataWithBar(self.window, Point(950,200), "*C",Point(750,190),Point(1150,210), aTempMax, "red")
+        self.bTempData = DataWithBar(self.window, Point(950,250), "*C",Point(750,240),Point(1150,260), bTempMax, "red")
+        self.cTempData = DataWithBar(self.window, Point(950,300), "*C",Point(750,290),Point(1150,310), bTempMax, "red")
+        self.yLabel = DataField(self.window, Point(40,225), "")
+        self.xLabel = DataField(self.window, Point(540,545), "")
+        self.press = DataWithBar(self.window,Point(975,100),"(atm)",Point(775,90),Point(1175,110),pressMax, "blue")
         self.dataFields = (self.altData, self.speedData, self.acclData, self.aTempData, self.bTempData, self.cTempData, self.yLabel, self.xLabel, self.press)
         
-    def run(self, window):
+        #Thread events
+        self.running = threading.Event()
+        self.paused = threading.Event()
+        
+        
+        return
+        
+    def run(self):
+        #CHANGE 
+        window = self.window
+        
         output.write("////////// " + time.asctime(time.localtime(time.time())) + " //////////\n")
         output.write("Time (min, s) Accl (m/s^2)  y-speed (m/s) altitude (m)  aTemp (*C)    bTemp (*C)    cTemp (*C)    pressure (atm)\n")
-        t = threading.currentThread()
-        while getattr(t, "do_run", True):
+        #t = threading.currentThread()
+        #while getattr(t, "do_run", True):
+        self.running.set()
+        self.paused.clear()
+        
+        while self.running.isSet():
             timeStart = time.time()
             
             # collect data for manipulation (acclY, aTemp, bTemp, cTemp)
@@ -140,6 +163,10 @@ class DataWindow():
                 print("TIME! " + str(round(time.time() - timeStart, 3)))
             while time.time() - timeStart < sampleTime:
                 time.sleep(0.01)
+                
+            while self.paused.isSet():
+                #self.paused.wait(timeout=None)
+                print "paused"
         print("Exited Thread and Stopped")  
             
         
