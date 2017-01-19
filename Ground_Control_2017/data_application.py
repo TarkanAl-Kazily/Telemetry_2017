@@ -4,8 +4,8 @@ import graphics as gw
 import display as disp
 import threading
 import time
-from docutils.nodes import target
-from concurrent.futures._base import RUNNING
+#from docutils.nodes import target
+#from concurrent.futures._base import RUNNING
 
 #Tkinter root 
 root = gw._root
@@ -14,9 +14,6 @@ class ThreadManager():
 	def __init__(self):
 		self.threads = {}
 		self.size = 0
-		self.running = threading.Event()
-		self.paused = threading.Event()
-		self.paused.clear()
 		
 	def addThread(self, name, thread):
 		self.threads.update({name:thread})
@@ -102,9 +99,10 @@ class Application(tk.Frame):
 	def __init__(self, master=None):
 		tk.Frame.__init__(self, master)
 		self.grid(sticky=tk.N+tk.S+tk.E+tk.W)
+		self.windows={}#Dictionary to hold windows
 		self.createWidgets()
 		self.tm = ThreadManager() #house all the threads
-		master.minsize(width=666, height=666)
+		master.minsize(width=666, height=666)#Change to new window
 		
 	def createWidgets(self):
 		top=self.winfo_toplevel() 
@@ -113,12 +111,14 @@ class Application(tk.Frame):
 		self.rowconfigure(0, weight=1) 
 		self.columnconfigure(0, weight=1) 
 		
+		#Quit Button
 		self.quitB = tk.Button(self, text='Quit', command=self.quit)
-		self.quitB.grid(row=0, column=3, sticky=tk.N+tk.E)
+		self.quitB.grid(row=0, column=8, sticky=tk.N+tk.E)
 		
+		#Window button
 		self.addWinB = tk.Button(self, text='New Window', command=self.insertWindow)
-		self.addWinB.grid(row=0, column=2, sticky=tk.N+tk.E)
-		
+		self.addWinB.grid(row=0, column=6, columnspan=2,sticky=tk.N+tk.E)
+
 	def quit(self):
 		try:
 			self.stop_test()
@@ -131,21 +131,23 @@ class Application(tk.Frame):
 		
 		#Set up window and display
 		self.newWin = gw.GraphWin("Data",1200,600, master=self)
-		self.newWin.grid(row=3, column=0)
+		self.newWin.grid(row=3, column=0, columnspan=5, rowspan=5)
 		disp.setUp(self.newWin)
+
+		#set as active window
 		self.activeWindow = self.newWin
 		
 		#Start Test button
 		self.winStartB = tk.Button(self, text='Start Test', command=self.start_test)
-		self.winStartB.grid(row=1, column=1)
+		self.winStartB.grid(row=1, column=6)
 		
 		#pause Test button
 		self.winPauseB = tk.Button(self, text='Pause', command=self.pause_test)
-		self.winPauseB.grid(row=1, column=2)
+		self.winPauseB.grid(row=1, column=7)
 		
 		#Stop Test button
 		self.winStopB = tk.Button(self, text='Stop', command=self.stop_test)
-		self.winStopB.grid(row=1, column=3)
+		self.winStopB.grid(row=1, column=8)
 		
 		self.dWin = disp.DataWindow(kwargs={'window':self.activeWindow})
 		root.update()
