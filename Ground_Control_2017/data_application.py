@@ -104,8 +104,8 @@ class Application(tk.Frame):
 		master.minsize(width=666, height=666)#Change to new window
 		
 		self.windows={}#Dictionary to hold windows
-		self.windowList = [5]
-		
+		self.windowList = [None] * 5
+		#a = numpy.empty(n, dtype=object)	
 	def createWidgets(self):
 		top=self.winfo_toplevel() 
 		top.rowconfigure(0, weight=1) 
@@ -133,7 +133,7 @@ class Application(tk.Frame):
 		if (len(self.windows) < 5):
 			#Set up window and display
 			newWin = gw.GraphWin("Data",1200,600, master=self)
-			newWin.grid(row=4, column=0, columnspan=5, rowspan=5)
+			newWin.grid(row=4, column=0, columnspan=20, rowspan=5)
 			disp.setUp(newWin)
 	
 			#set as active window and add to window dictionary
@@ -146,8 +146,8 @@ class Application(tk.Frame):
 			self.windowList[index] = name
 			self.v = tk.StringVar()
 			self.v.set(self.windowList[0])
-			self.winOM = tk.OptionMenu(self,self.v, *self.windowList)
-			self.winOM.grid(row=3, column=6, rowspan=3)
+			self.winOM = tk.OptionMenu(self,self.v, *self.windowList,command=self.selectOpt)
+			self.winOM.grid(row=3, column=0)
 			
 			#Start Test button
 			self.winStartB = tk.Button(self, text='Start Test', command=self.start_test)
@@ -179,6 +179,9 @@ class Application(tk.Frame):
 		
 	def stop_test(self):
 		self.tm.stopThread("Data Window")
+
+	def selectOpt(self, value):
+		print value
 	
 def test_thread():
 	t = threading.currentThread()
