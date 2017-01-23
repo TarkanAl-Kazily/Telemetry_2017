@@ -99,10 +99,12 @@ class Application(tk.Frame):
 	def __init__(self, master=None):
 		tk.Frame.__init__(self, master)
 		self.grid(sticky=tk.N+tk.S+tk.E+tk.W)
-		self.windows={}#Dictionary to hold windows
 		self.createWidgets()
 		self.tm = ThreadManager() #house all the threads
 		master.minsize(width=666, height=666)#Change to new window
+		
+		self.windows={}#Dictionary to hold windows
+		self.windowList = [5]
 		
 	def createWidgets(self):
 		top=self.winfo_toplevel() 
@@ -128,29 +130,39 @@ class Application(tk.Frame):
 		tk.Frame.quit(self)
 	
 	def insertWindow(self):
-		
-		#Set up window and display
-		self.newWin = gw.GraphWin("Data",1200,600, master=self)
-		self.newWin.grid(row=3, column=0, columnspan=5, rowspan=5)
-		disp.setUp(self.newWin)
-
-		#set as active window
-		self.activeWindow = self.newWin
-		
-		#Start Test button
-		self.winStartB = tk.Button(self, text='Start Test', command=self.start_test)
-		self.winStartB.grid(row=1, column=6)
-		
-		#pause Test button
-		self.winPauseB = tk.Button(self, text='Pause', command=self.pause_test)
-		self.winPauseB.grid(row=1, column=7)
-		
-		#Stop Test button
-		self.winStopB = tk.Button(self, text='Stop', command=self.stop_test)
-		self.winStopB.grid(row=1, column=8)
-		
-		self.dWin = disp.DataWindow(kwargs={'window':self.activeWindow})
-		root.update()
+		if (len(self.windows) < 5):
+			#Set up window and display
+			newWin = gw.GraphWin("Data",1200,600, master=self)
+			newWin.grid(row=4, column=0, columnspan=5, rowspan=5)
+			disp.setUp(newWin)
+	
+			#set as active window and add to window dictionary
+			self.activeWindow = newWin
+			index = len(self.windows)
+			name = "DataWin " + str(index)
+			self.windows.update({name : newWin})
+			
+			#Window Button
+			self.windowList[index] = name
+			self.v = tk.StringVar()
+			self.v.set(self.windowList[0])
+			self.winOM = tk.OptionMenu(self,self.v, *self.windowList)
+			self.winOM.grid(row=3, column=6, rowspan=3)
+			
+			#Start Test button
+			self.winStartB = tk.Button(self, text='Start Test', command=self.start_test)
+			self.winStartB.grid(row=1, column=6)
+			
+			#pause Test button
+			self.winPauseB = tk.Button(self, text='Pause', command=self.pause_test)
+			self.winPauseB.grid(row=1, column=7)
+			
+			#Stop Test button
+			self.winStopB = tk.Button(self, text='Stop', command=self.stop_test)
+			self.winStopB.grid(row=1, column=8)
+			
+			self.dWin = disp.DataWindow(kwargs={'window':self.activeWindow})
+			root.update()
 	
 	def start_test(self):
 		name = "Data Window" #hard code for now
