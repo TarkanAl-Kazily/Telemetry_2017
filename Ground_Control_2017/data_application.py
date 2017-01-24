@@ -65,9 +65,6 @@ class ThreadManager():
 	def removeThread(self, name):
 		try:
 			if (self.threads.has_key(name)):
-				#if (not self.isPaused(name)):
-					#include thread.join?
-				#	self.pauseThread(name)
 				self.size = self.size - 1
 				self.threads.remove(name)
 		except (AttributeError, TypeError):
@@ -123,9 +120,9 @@ class Application(tk.Frame):
 
 	def quit(self):
 		try:
-			self.stop_test()
+			self.stop_all()
 		except:
-			pass
+			print "Error: Shit went down"
 		
 		tk.Frame.quit(self)
 	
@@ -140,6 +137,7 @@ class Application(tk.Frame):
 			self.activeWindow = newWin
 			index = len(self.windows)
 			name = "DataWin " + str(index)
+			self.activeName = name
 			self.windows.update({name : newWin})
 			
 			#Window Button
@@ -165,23 +163,32 @@ class Application(tk.Frame):
 			root.update()
 	
 	def start_test(self):
-		name = "Data Window" #hard code for now
+		name = self.activeName 
 		if(not self.tm.contains(name)):
-			t1 = self.dWin
+			t1 = [name]
 			t1.start()
-			#self.winStartB.set
-			self.tm.addThread("Data Window", t1)
+			self.tm.addThread(name, t1)
 		else:
-			self.tm.resumeThread("Data Window")
+			self.tm.resumeThread(name)
 		
 	def pause_test(self):
-		self.tm.pauseThread("Data Window")
+		self.tm.pauseThread(self.activeName)
 		
 	def stop_test(self):
-		self.tm.stopThread("Data Window")
+		self.tm.stopThread(self.activeName)
 
 	def selectOpt(self, value):
-		print value
+		print "Swithcing active window to " + value
+		self.activeWin = self.windows[value]
+		self.activeName = value
+		disp.setUp(self.activeWin)
+		root.update()
+	
+	def stop_all(self):
+		print "Deleting all threads"
+		for name in self.tm.threads:
+			self.tm.stopThread(name)
+			
 	
 def test_thread():
 	t = threading.currentThread()
