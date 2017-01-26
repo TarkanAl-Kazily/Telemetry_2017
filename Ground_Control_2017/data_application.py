@@ -1,11 +1,13 @@
 #!/usr/bin/env python
-import Tkinter as tk
+try:  # import as appropriate for 2.x vs. 3.x
+   import tkinter as tk
+except:
+   import Tkinter as tk
 import graphics as gw
 import display as disp
 import threading
 import time
-#from docutils.nodes import target
-#from concurrent.futures._base import RUNNING
+
 
 #Tkinter root 
 root = gw._root
