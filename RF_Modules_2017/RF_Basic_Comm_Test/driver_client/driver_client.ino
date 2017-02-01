@@ -43,6 +43,7 @@ void setup() {
     if (!rf22.init()) {
         Serial.println("rf22 driver init failed");
     } else {
+        rf22.setTxPower(RH_RF22_RF23B_TXPOW_1DBM);
         Serial.println("rf22 driver is initialized");
     }
     // Defaults after init are 434.0MHz, 0.05MHz AFC pull-in, modulation FSK_Rb2_4Fd36
