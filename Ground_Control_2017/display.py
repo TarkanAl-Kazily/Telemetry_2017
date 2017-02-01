@@ -50,6 +50,8 @@ class DataWindow(threading.Thread):
         self.args=args
         self.kwargs=kwargs
         
+        self.name = name
+        
         #IMPLEMENT GRABBING WINDOW FROM KWARGS
         self.window = kwargs['window']
         
@@ -77,10 +79,12 @@ class DataWindow(threading.Thread):
         #CHANGE 
         window = self.window
         
-        output.write("////////// " + time.asctime(time.localtime(time.time())) + " //////////\n")
-        output.write("Time (min, s) Accl (m/s^2)  y-speed (m/s) altitude (m)  aTemp (*C)    bTemp (*C)    cTemp (*C)    pressure (atm)\n")
-        #t = threading.currentThread()
-        #while getattr(t, "do_run", True):
+        #debug
+        print "running " + self.name
+        
+        #output.write("////////// " + time.asctime(time.localtime(time.time())) + " //////////\n")
+        #output.write("Time (min, s) Accl (m/s^2)  y-speed (m/s) altitude (m)  aTemp (*C)    bTemp (*C)    cTemp (*C)    pressure (atm)\n")
+        
         self.running.set()
         self.paused.clear()
         
@@ -143,30 +147,21 @@ class DataWindow(threading.Thread):
                     oldP = p
 
             # record output
-            recordTime = str(time.localtime(time.time())[4]) + ", " + str(round(time.localtime(time.time())[5] + math.modf(time.time())[0],2))
-            record(output, 14, (recordTime, currentData[0], round(self.speed, 2), round(self.altitude, 2), currentData[1], currentData[2], currentData[3], currentData[4]))
+            #recordTime = str(time.localtime(time.time())[4]) + ", " + str(round(time.localtime(time.time())[5] + math.modf(time.time())[0],2))
+            #record(output, 14, (recordTime, currentData[0], round(self.speed, 2), round(self.altitude, 2), currentData[1], currentData[2], currentData[3], currentData[4]))
             
-            #Handled by a Tkinter button 
-            """
-            # check if paused or stopped
-            click = window.checkMouse()
-            if click and int(click.getX()) in range(1150,1195) and int(click.getY()) in range(550,595):
-                running = 0
-                #window.close()
-            elif click and int(click.getX()) in range(1100,1149) and int(click.getY()) in range(550,595):
-                pause.undraw()
-                window.getMouse()
-                pause.draw(window)
-            """
+            
             
             if time.time() - timeStart > sampleTime:
                 print("TIME! " + str(round(time.time() - timeStart, 3)))
             while time.time() - timeStart < sampleTime:
-                time.sleep(0.01)
+                time.sleep(0.03)
             
             
             while self.paused.isSet():
                 time.sleep(0.001)
+            #end of loop
+            
         print("Exited Thread and Stopped")  
             
         

@@ -1,11 +1,13 @@
 #!/usr/bin/env python
-import Tkinter as tk
+try:  # import as appropriate for 2.x vs. 3.x
+   import tkinter as tk
+except:
+   import Tkinter as tk
 import graphics as gw
 import display as disp
 import threading
 import time
-from docutils.nodes import target
-from concurrent.futures._base import RUNNING
+
 
 #Tkinter root 
 root = gw._root
@@ -14,9 +16,6 @@ class ThreadManager():
 	def __init__(self):
 		self.threads = {}
 		self.size = 0
-		self.running = threading.Event()
-		self.paused = threading.Event()
-		self.paused.clear()
 		
 	def addThread(self, name, thread):
 		self.threads.update({name:thread})
@@ -43,6 +42,8 @@ class ThreadManager():
 			if (self.threads.has_key(name)):
 				self.threads[name].paused.clear()
 				self.threads[name].running.clear()
+				self.threads[name].join()
+				self.removeThread(name)
 		except (AttributeError, TypeError):
 			raise AssertionError('Wrong type')
 	
@@ -68,11 +69,8 @@ class ThreadManager():
 	def removeThread(self, name):
 		try:
 			if (self.threads.has_key(name)):
-				#if (not self.isPaused(name)):
-					#include thread.join?
-				#	self.pauseThread(name)
 				self.size = self.size - 1
-				self.threads.remove(name)
+				del self.threads[name]
 		except (AttributeError, TypeError):
 			raise AssertionError('Wrong type')
 		
@@ -104,8 +102,12 @@ class Application(tk.Frame):
 		self.grid(sticky=tk.N+tk.S+tk.E+tk.W)
 		self.createWidgets()
 		self.tm = ThreadManager() #house all the threads
-		master.minsize(width=666, height=666)
+		master.minsize(width=666, height=666)#Change to new window
 		
+		self.windows={}#Dictionary to hold windows
+		self.windowList = [None] * 5
+		#a = numpy.empty(n, dtype=object)
+			
 	def createWidgets(self):
 		top=self.winfo_toplevel() 
 		top.rowconfigure(0, weight=1) 
@@ -113,58 +115,96 @@ class Application(tk.Frame):
 		self.rowconfigure(0, weight=1) 
 		self.columnconfigure(0, weight=1) 
 		
+		#Quit Button
 		self.quitB = tk.Button(self, text='Quit', command=self.quit)
-		self.quitB.grid(row=0, column=3, sticky=tk.N+tk.E)
+		self.quitB.grid(row=0, column=8, sticky=tk.N+tk.E)
 		
+		#Window button
 		self.addWinB = tk.Button(self, text='New Window', command=self.insertWindow)
-		self.addWinB.grid(row=0, column=2, sticky=tk.N+tk.E)
-		
+		self.addWinB.grid(row=0, column=6, columnspan=2,sticky=tk.N+tk.E)
+
 	def quit(self):
 		try:
-			self.stop_test()
+			self.stop_all()
 		except:
-			pass
+			print "Error: deletion issues"
 		
 		tk.Frame.quit(self)
 	
 	def insertWindow(self):
-		
+		#limit to the number of threads which can be run simultaneously
+		if (len(self.windows) < 1):
+			
+			index = len(self.windows)
+			name = "DataWin " + str(index)
+			self.setUpWindow(name)
+			
+			#Window Button
+			self.windowList[index] = name
+			self.v = tk.StringVar()
+			self.v.set(self.windowList[0])
+			self.winOM = tk.OptionMenu(self,self.v, *self.windowList,command=self.selectOpt)
+			self.winOM.grid(row=3, column=0)
+			
+			#Start Test button
+			self.winStartB = tk.Button(self, text='Start Test', command=self.start_test)
+			self.winStartB.grid(row=1, column=6)
+			
+			#pause Test button
+			self.winPauseB = tk.Button(self, text='Pause', command=self.pause_test)
+			self.winPauseB.grid(row=1, column=7)
+			
+			#Stop Test button
+			self.winStopB = tk.Button(self, text='Stop', command=self.stop_test)
+			self.winStopB.grid(row=1, column=8)
+			
+			
+	
+			root.update()
+			
+	def setUpWindow(self, name):
 		#Set up window and display
-		self.newWin = gw.GraphWin("Data",1200,600, master=self)
-		self.newWin.grid(row=3, column=0)
-		disp.setUp(self.newWin)
-		self.activeWindow = self.newWin
+		newWin = gw.GraphWin("Data",1200,600, master=self)
+		newWin.grid(row=4, column=0, columnspan=20, rowspan=5)
+		disp.setUp(newWin)
+
+		#set as active window and add to window dictionary
+		self.activeWindow = newWin
+		self.activeName = name
+		self.windows.update({name : newWin})
 		
-		#Start Test button
-		self.winStartB = tk.Button(self, text='Start Test', command=self.start_test)
-		self.winStartB.grid(row=1, column=1)
-		
-		#pause Test button
-		self.winPauseB = tk.Button(self, text='Pause', command=self.pause_test)
-		self.winPauseB.grid(row=1, column=2)
-		
-		#Stop Test button
-		self.winStopB = tk.Button(self, text='Stop', command=self.stop_test)
-		self.winStopB.grid(row=1, column=3)
-		
-		self.dWin = disp.DataWindow(kwargs={'window':self.activeWindow})
-		root.update()
+		dWin = disp.DataWindow(name=name, kwargs={'window':self.activeWindow})
+		self.tm.addThread(name, dWin)
 	
 	def start_test(self):
-		name = "Data Window" #hard code for now
-		if(not self.tm.contains(name)):
-			t1 = self.dWin
+		name = self.activeName 
+		if(not self.tm.isRunning(name)):
+			if (self.tm.getThread(self.activeName) == None):
+				self.setUpWindow(self.activeName)
+			t1 = self.tm.getThread(self.activeName)
 			t1.start()
-			#self.winStartB.set
-			self.tm.addThread("Data Window", t1)
+			self.tm.addThread(name, t1)
 		else:
-			self.tm.resumeThread("Data Window")
+			self.tm.resumeThread(name)
 		
 	def pause_test(self):
-		self.tm.pauseThread("Data Window")
+		self.tm.pauseThread(self.activeName)
 		
 	def stop_test(self):
-		self.tm.stopThread("Data Window")
+		self.tm.stopThread(self.activeName)
+
+	def selectOpt(self, value):
+		print "Swithcing active window to " + value
+		self.activeWindow = self.windows[value]
+		self.activeName = value
+		disp.setUp(self.activeWindow)
+		root.update()
+		
+	def stop_all(self):
+		print "Deleting all threads"
+		for name in self.tm.threads.keys():
+			self.tm.stopThread(name)
+			
 	
 def test_thread():
 	t = threading.currentThread()
