@@ -12,6 +12,7 @@ class Parser():
     def __init__(self):
         self.ser = serial.Serial()
         self.ser.baudrate(9600)
+        self.queueDict = {}
         
     #opens serial port which was initialized with given name
     #For windows, name will be like 'COM4'
@@ -20,7 +21,7 @@ class Parser():
         try:
             self.ser = serial.Serial(portName, timeout=2) #open serial port
         except:
-            raise IllegalSerialAccess("No serial port with portName: " + portName)
+            raise IllegalSerialAccess("No serial port with name: " + portName)
         
         #prints the name to console to ensure the connection is accurate
         print self.ser.name
@@ -30,6 +31,10 @@ class Parser():
     
     #Checks the serial report for strings, then parses string
     def update(self):
+        '''
+            @requires: serial port is open.
+            @raise IllegalStateException: if the serial port is not open 
+        '''
         print "Not Yet Implemented"
         
     
