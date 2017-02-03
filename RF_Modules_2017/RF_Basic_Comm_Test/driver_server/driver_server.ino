@@ -35,11 +35,19 @@
 // Singleton instance of the radio driver
 RH_RF22 rf22;
 
+int counter = 0;
+
 void setup()
 {
     Serial.begin(9600);
-    if (!rf22.init())
+    while (!Serial);
+    Serial.println("Initializing...");
+    if (!rf22.init()) {
         Serial.println("init failed");
+    } else {
+        rf22.setTxPower(RH_RF22_RF23B_TXPOW_1DBM);
+        Serial.println("rf22 driver is initialized");
+    }
     // Defaults after init are 434.0MHz, 0.05MHz AFC pull-in, modulation FSK_Rb2_4Fd36
 }
 
@@ -67,6 +75,12 @@ void loop()
         else
         {
             Serial.println("recv failed");
+        }
+    } else {
+        counter++;
+        if (counter == 10000) {
+            Serial.println("Server waiting");
+            counter = 0;
         }
     }
 }
