@@ -2,6 +2,7 @@ import graphics as gw
 import time
 import math
 import threading
+from collections import deque
 
 # Do I need this???
 GraphWin = gw.GraphWin
@@ -15,18 +16,17 @@ Text = gw.Text
 Entry  = gw.Entry
 Image = gw.Image
 
-#Set up Global
+#Set up static values
 inputFile = "input1.txt" # name of file to read input from
 outputFile = "savedData.txt" # name of file where data is recorded
-aTempMax = 1000 # the temp/press when the bars are full
-bTempMax = 1000
-cTempMax = 1000
+aTempMax = 800 # the temp/press when the bars are full
+bTempMax = 800
+cTempMax = 800
 pressMax = 1.5
 sampleTime = 0.5 # time between samples in seconds
 
 # initialize output
 output = open(outputFile, "a")
-
 
 class DataWindow(threading.Thread):
     def __init__(self, group=None, target=None, name=None,
@@ -42,6 +42,9 @@ class DataWindow(threading.Thread):
         self.origin = Point(75,525) # pixel at graph origin
         self.yMax = 315 # pixel length of y axis
         self.xMax = 465 # pixel length of x axis
+        self.points = [Point(0,0),] # the data recorded and scaled
+        self.displayPoints = [self.origin,] # the data displayed
+        self.displayLines = [] # the connecting lines
         
         #Grab Args
         self.args=args
@@ -57,19 +60,13 @@ class DataWindow(threading.Thread):
         self.altData.line.setSize(32)
         self.speedData = DataField(self.window, Point(780,30), "(m/s)")
         self.acclData = DataField(self.window, Point(1050,30), "(m/s^2)")
-        
         self.aTempData = DataWithBar(self.window, Point(950,200), "*C",Point(750,190),Point(1150,210), aTempMax, "red")
         self.bTempData = DataWithBar(self.window, Point(950,250), "*C",Point(750,240),Point(1150,260), bTempMax, "red")
         self.cTempData = DataWithBar(self.window, Point(950,300), "*C",Point(750,290),Point(1150,310), bTempMax, "red")
-        
         self.yLabel = DataField(self.window, Point(40,225), "")
         self.xLabel = DataField(self.window, Point(540,545), "")
-        
         self.press = DataWithBar(self.window,Point(975,100),"(atm)",Point(775,90),Point(1175,110),pressMax, "blue")
         self.dataFields = (self.altData, self.speedData, self.acclData, self.aTempData, self.bTempData, self.cTempData, self.yLabel, self.xLabel, self.press)
-        
-        # GRAPH
-        self.altGraph = Graph(self.window, self.origin, self.yMax, self.xMax, self.currentAltMax, self.currentTMax, "blue")
         
         #Thread events
         self.running = threading.Event()
@@ -118,19 +115,43 @@ class DataWindow(threading.Thread):
             self.dataFields[3].set(currentData[1])
             self.dataFields[4].set(currentData[2])
             self.dataFields[5].set(currentData[3])
-            self.dataFields[6].set(self.altGraph.getAxisValues()[0])
-            self.dataFields[7].set(self.altGraph.getAxisValues()[1])
+            self.dataFields[6].set(self.currentAltMax)
+            self.dataFields[7].set(self.currentTMax)
             self.dataFields[8].set(currentData[4])
-            # graph: 
-            self.altGraph.addData(self.altitude)
-            
+        
+            # graph:
+            self.points.append(Point(self.points[-1].getX() + self.xMax * sampleTime / self.currentTMax, self.altitude * self.yMax / self.currentAltMax))
+            while self.altitude > self.currentAltMax:
+                oldMax = self.currentAltMax
+                self.currentAltMax  = self.currentAltMax * 1.5
+                for i in range(0,len(self.points)):
+                    self.points[i] = Point(self.points[i].getX(), self.points[i].getY() * oldMax / self.currentAltMax)
+            while self.points[-1].getX() > self.xMax:
+                oldMax = self.currentTMax
+                self.currentTMax += 10
+                for i in range(0,len(self.points)):
+                    self.points[i] = Point(self.points[i].getX() * oldMax / self.currentTMax, self.points[i].getY())
+            for p in self.displayPoints:
+                p.undraw()
+            for l in self.displayLines:
+                l.undraw()
+            self.displayPoints = convert(self.points, self.origin)
+            oldP = self.origin
+            for p in self.displayPoints:
+                p.draw(window)
+                if len(self.displayPoints) < self.xMax:
+                    l = Line(p,oldP)
+                    l.setFill("Blue")
+                    l.draw(window)
+                    self.displayLines.append(l)
+                    oldP = p
 
             # record output
             #recordTime = str(time.localtime(time.time())[4]) + ", " + str(round(time.localtime(time.time())[5] + math.modf(time.time())[0],2))
             #record(output, 14, (recordTime, currentData[0], round(self.speed, 2), round(self.altitude, 2), currentData[1], currentData[2], currentData[3], currentData[4]))
             
             
-            # reports if render time is greater than sample time.
+            
             if time.time() - timeStart > sampleTime:
                 print("TIME! " + str(round(time.time() - timeStart, 3)))
             while time.time() - timeStart < sampleTime:
@@ -144,6 +165,7 @@ class DataWindow(threading.Thread):
         print("Exited Thread and Stopped")  
             
         
+    
     
 
 def record(output, spacing, data):
@@ -191,19 +213,14 @@ def setUp(window): # sets up the static elements of the data display
         Text(Point(675,300), "PartC Temp:").draw(window)
         Rectangle(Point(750,290),Point(1150,310)).draw(window)
         Rectangle(Point(1100,550),Point(1195,595)).draw(window) # button box
-
-# A Data field that displays data... 
+            
 class DataField:
-    # Parameters: window: the Graphics Window 
-    #           location: the Point at the center of the display
-    #               unit: the unit associated wiht the data
     def __init__(self, window, location, unit):
         self.line = Text(location, "READY")
         self.window = window
         self.line.draw(self.window)
         self.unit = unit
-    
-    # sets and displays new data
+
     def set(self, data):
         if data != "NO":
             self.line.setText(str(round(data, 1)) + " " + self.unit)
@@ -212,15 +229,7 @@ class DataField:
         self.line.undraw()
         self.line.draw(self.window)
 
-# displays data wiht a "temperature bar" that fills left to right based on value. 
 class DataWithBar:
-    # Parameters: window: the Graphics Window
-    #        txtLocation: the middle of the location of the data readout
-    #               unit: the unit associated with the data
-    #            corner1: the upper left corner of the "temperature bar"
-    #            corner2: the lower right corner of the "temperature bar"
-    #            maximum: the value at which the bar is completely filled
-    #              color: the color of the bar
     def __init__(self, window, txtLocation, unit, corner1, corner2, maximum, color):
         self.line = Text(txtLocation, "READY")
         self.line.draw(window)
@@ -247,107 +256,53 @@ class DataWithBar:
         self.line.undraw()
         self.line.draw(self.window)
     
-# Creates a 1-quadrant graph at specified location with vertical and horizontal
-#     length. New data can be added and will be plotted with respect to time. 
-#     Plots data at time when method called.
-class Graph:
-    # Parameters: window: the Graphics Window
-    #             origin: a Point location for the origin of the graph.
-    #            yLength: the pixel length of the Y-axis.
-    #            tLength: the pixel length of the T-axis.
-    #           initYmax: the initial data value for the maximum of the Y-axis.
-    #           initTmax: the initial data value for the maximum of the T-axis.
-    def __init__(self, window, origin, yLength, tLength, initYMax, initTMax, color):
-        self.window = window
-        self.origin = origin
-        self.yLength = yLength
-        self.tLength = tLength
-        self.currentYMax = initYMax
-        self.currentTMax = initTMax
-        self.color = color # color of the lines and points
-        self.points = [] # the data recorded and scaled
-        self.displayPoints = [] # the data displayed
-        self.displayLines = [] # the connecting lines
-        self.oldTime = 0 # tracks last 
     
-    # adds a data point and redraws graph
-    def addData(self, data): # takes a data point and redraws the graph
-        if len(self.points) == 0:
-            self.points.append(Point(0, data * self.yLength / self.currentYMax))
-            self.oldTime = time.time()
-        else: 
-            self.points.append(Point(self.points[-1].getX() + self.tLength * (time.time() - self.oldTime) / self.currentTMax, data * self.yLength / self.currentYMax))
-            self.oldTime = time.time()
-        while(data > self.currentYMax):
-            oldMax = self.currentYMax
-            self.currentYMax  = self.currentYMax * 1.5 # extends y-axis  by 1.5 each time max data is reached (change later?)
-            for i in range(0,len(self.points)):
-                self.points[i] = Point(self.points[i].getX(), self.points[i].getY() * oldMax / self.currentYMax)
-        while self.points[-1].getX() > self.tLength:
-            oldMax = self.currentTMax
-            self.currentTMax += 10 # extends t-axis 10 seconds each time the max time is reached (change later?)
-            for i in range(0,len(self.points)):
-                self.points[i] = Point(self.points[i].getX() * oldMax / self.currentTMax, self.points[i].getY())
-        for p in self.displayPoints:
-            p.undraw()
-        for l in self.displayLines:
-            l.undraw()
-        self.convert()
-        oldP = self.origin
-        for p in self.displayPoints:
-            p.draw(self.window)
-            if len(self.displayPoints) < self.tLength:
-                l = Line(p,oldP)
-                l.setFill(self.color)
-                l.draw(self.window)
-                self.displayLines.append(l)
-                oldP = p
-    
-    # Returns the maximum y and t axis values for labeling purposes  
-    def getAxisValues(self):
-        return [self.currentYMax, self.currentTMax]
-    
-    # Helps addData method.
-    def convert(self):
-        newPoints = []
-        for i in range(0,len(self.points)):
-            p = Point(self.origin.getX() + self.points[i].getX(),self.origin.getY() - self.points[i].getY())
-            p.setFill(self.color)
-            newPoints.append(p)
-        self.displayPoints =  newPoints
-
-
-"""def convert(points, origin):
+def convert(points, origin):
     newPoints = [origin,]
     for i in range(0,len(points)):
         p = Point(origin.getX() + points[i].getX(),origin.getY() - points[i].getY())
         p.setFill("blue")
         newPoints.append(p)
     return newPoints
+
+
+class Serial(threading.Thread): 
     
-    (OLD GRAPH)
-    self.points.append(Point(self.points[-1].getX() + self.xMax * sampleTime / self.currentTMax, self.altitude * self.yMax / self.currentAltMax))
-            while self.altitude > self.currentAltMax:
-                oldMax = self.currentAltMax
-                self.currentAltMax  = self.currentAltMax * 1.5
-                for i in range(0,len(self.points)):
-                    self.points[i] = Point(self.points[i].getX(), self.points[i].getY() * oldMax / self.currentAltMax)
-            while self.points[-1].getX() > self.xMax:
-                oldMax = self.currentTMax
-                self.currentTMax += 10
-                for i in range(0,len(self.points)):
-                    self.points[i] = Point(self.points[i].getX() * oldMax / self.currentTMax, self.points[i].getY())
-            for p in self.displayPoints:
-                p.undraw()
-            for l in self.displayLines:
-                l.undraw()
-            self.displayPoints = convert(self.points, self.origin)
-            oldP = self.origin
-            for p in self.displayPoints:
-                p.draw(window)
-                if len(self.displayPoints) < self.xMax:
-                    l = Line(p,oldP)
-                    l.setFill("Blue")
-                    l.draw(window)
-                    self.displayLines.append(l)
-                    oldP = p"""
+    def __init__(self, group=None, target=None, name=None,
+                 args=(), kwargs=None, verbose=None):
+        
+        super(Serial, self).__init__(group=group, target=target, 
+                                     name=name, verbose=verbose)
+        
+        
+        self.velQ = deque([])         # initializing as empty queues
+        self.accelQ = deque([])
+        self.altQ = deque([])
+        self.aTempQ = deque([])
+        self.bTempQ = deque([])
+        self.cTempQ = deque([])
+        self.pressQ = deque([])
+        self.gyroQ = deque([])
+        self.dataDict = {'Vel': self.velQ, 'Accel': self.accelQ, 'Alt': self.altQ, 'aTemp': self.aTempQ, 'bTemp': self.bTempQ,
+                        'cTemp': self.cTempQ,'Press': self.pressQ, 'Gyro': self.gyroQ}
+        
+    def get(self, type):
+        if (self.isEmpty(dataDict.get(type))):
+            return None
+        else:
+            return dataDict.get(type).pop()
+        
+    def isEmpty(self, queue):
+        return queue == deque([])
+    
+    def run(self):  
+        #Check for standardization by checking if length is not a multiple of 16
+        #Id differentiates between different sensors of the same type
+        with open("datainput.txt") as dataInput:   # assuming the arduino is writing to this file
+            for line in dataInput:
+                type, measurement = line.strip().split(":")    # type:measurement format
+                self.dataDict.get(type).append(measurement)
+            file = open("datainput.txt", 'w')  #opens for writing so we can clear it
+            file.truncate() # clears file
+            time.sleep(.15)  # sleep while waiting for more data to parse
+        

@@ -109,6 +109,7 @@ class Application(tk.Frame):
 		
 		self.windows={}#Dictionary to hold windows
 		self.windowList = [None] * 5
+        #disp.Serial().run() ############################################################################## Cole put this here to test his run() method
 		#a = numpy.empty(n, dtype=object)
 			
 	def createWidgets(self):
