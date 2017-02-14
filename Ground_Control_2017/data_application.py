@@ -9,10 +9,13 @@ import threading
 import time
 
 
-#Tkinter root 
+#Tkinter root
+#graphics lib complains when it does not get the original instantiation 
 root = gw._root
 
+
 class ThreadManager():
+    
 	def __init__(self):
 		self.threads = {}
 		self.size = 0
