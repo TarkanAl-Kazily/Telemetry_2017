@@ -165,7 +165,7 @@ class Application(tk.Frame):
 			
 	def setUpWindow(self, name):
 		#Set up window and display
-		newWin = gw.GraphWin("Data",1200,600, master=self)
+		newWin = gw.GraphWin("Data",1300,600, master=self)
 		newWin.grid(row=4, column=0, columnspan=20, rowspan=5)
 		disp.setUp(newWin)
 

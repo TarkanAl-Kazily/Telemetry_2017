@@ -79,9 +79,6 @@ class DataWindow(threading.Thread):
         return
         
     def run(self):
-        #CHANGE 
-        window = self.window
-        
         #debug
         print "running " + self.name
         
@@ -190,7 +187,7 @@ def setUp(window): # sets up the static elements of the data display
         Rectangle(Point(750,240),Point(1150,260)).draw(window)
         Text(Point(675,300), "PartC Temp:").draw(window)
         Rectangle(Point(750,290),Point(1150,310)).draw(window)
-        Rectangle(Point(1100,550),Point(1195,595)).draw(window) # button box
+        #Rectangle(Point(1100,550),Point(1195,595)).draw(window) # button box
 
 # A Data field that displays data... 
 class DataField:
@@ -212,7 +209,7 @@ class DataField:
         self.line.undraw()
         self.line.draw(self.window)
 
-# displays data wiht a "temperature bar" that fills left to right based on value. 
+# displays data with a "temperature bar" that fills left to right based on value. 
 class DataWithBar:
     # Parameters: window: the Graphics Window
     #        txtLocation: the middle of the location of the data readout
@@ -247,7 +244,7 @@ class DataWithBar:
         self.line.undraw()
         self.line.draw(self.window)
     
-# Creates a 1-quadrant graph at specified location with vertical and horizontal
+# Creates a 2-quadrant graph at specified location with vertical and horizontal
 #     length. New data can be added and will be plotted with respect to time. 
 #     Plots data at time when method called.
 class Graph:
@@ -266,12 +263,75 @@ class Graph:
         self.currentTMax = initTMax
         self.color = color # color of the lines and points
         self.points = [] # the data recorded and scaled
-        self.displayPoints = [] # the data displayed
+        self.displayPoints = [] # the data to be displayed
         self.displayLines = [] # the connecting lines
         self.oldTime = 0 # tracks last 
     
-    # adds a data point and redraws graph
+    # adds a data point and redraws graph if necessary
     def addData(self, data): # takes a data point and redraws the graph
+        if len(self.points) == 0:
+            self.points.append(Point(0, data * self.yLength / self.currentYMax))
+            self.oldTime = time.time()
+        else: 
+            self.points.append(Point(self.points[-1].getX() + self.tLength * (time.time() - self.oldTime) / self.currentTMax, data * self.yLength / self.currentYMax))
+            self.oldTime = time.time()
+        doRedraw = 0
+        while(data > self.currentYMax or data < - self.currentYMax):
+            doRedraw = 1
+            oldMax = self.currentYMax
+            self.currentYMax  = self.currentYMax * 1.5 # extends y-axis  by 1.5 each time max data is reached (change later?)
+            for i in range(0,len(self.points)):
+                self.points[i] = Point(self.points[i].getX(), self.points[i].getY() * oldMax / self.currentYMax)
+        while self.points[-1].getX() > self.tLength:
+            doRedraw = 1
+            oldMax = self.currentTMax
+            self.currentTMax += 10 # extends t-axis 10 seconds each time the max time is reached (change later?)
+            for i in range(0,len(self.points)):
+                self.points[i] = Point(self.points[i].getX() * oldMax / self.currentTMax, self.points[i].getY())
+        if doRedraw:
+            self.redraw() # redraws all points and lines
+        else: # draw new point only
+            p = Point(self.origin.getX() + self.points[-1].getX(),self.origin.getY() - self.points[-1].getY())
+            p.setFill(self.color)
+            self.displayPoints.append(p)
+            p.draw(self.window)
+            if len(self.displayPoints) > 1 and len(self.displayPoints) < self.tLength:
+                l = Line(p,self.displayPoints[-2])
+                l.setFill(self.color)
+                l.draw(self.window)
+                self.displayLines.append(l)
+            
+    
+    # Returns the maximum y and t axis values for labeling purposes  
+    def getAxisValues(self):
+        return [self.currentYMax, self.currentTMax]
+    
+    # Helps addData method.
+    def redraw(self):
+        for p in self.displayPoints:
+            p.undraw()
+        for l in self.displayLines:
+            l.undraw()
+        newPoints = []
+        for i in range(0,len(self.points)):
+            p = Point(self.origin.getX() + self.points[i].getX(),self.origin.getY() - self.points[i].getY())
+            p.setFill(self.color)
+            newPoints.append(p)
+        self.displayPoints =  newPoints
+        oldP = self.origin
+        for p in self.displayPoints:
+            p.draw(self.window)
+            if len(self.displayPoints) < self.tLength:
+                l = Line(p,oldP)
+                l.setFill(self.color)
+                l.draw(self.window)
+                self.displayLines.append(l)
+                oldP = p
+        #print("REDREW!")
+    
+    
+
+"""def addData(self, data): # takes a data point and redraws the graph
         if len(self.points) == 0:
             self.points.append(Point(0, data * self.yLength / self.currentYMax))
             self.oldTime = time.time()
@@ -302,22 +362,9 @@ class Graph:
                 l.draw(self.window)
                 self.displayLines.append(l)
                 oldP = p
-    
-    # Returns the maximum y and t axis values for labeling purposes  
-    def getAxisValues(self):
-        return [self.currentYMax, self.currentTMax]
-    
-    # Helps addData method.
-    def convert(self):
-        newPoints = []
-        for i in range(0,len(self.points)):
-            p = Point(self.origin.getX() + self.points[i].getX(),self.origin.getY() - self.points[i].getY())
-            p.setFill(self.color)
-            newPoints.append(p)
-        self.displayPoints =  newPoints
 
 
-"""def convert(points, origin):
+def convert(points, origin):
     newPoints = [origin,]
     for i in range(0,len(points)):
         p = Point(origin.getX() + points[i].getX(),origin.getY() - points[i].getY())
