@@ -64,12 +64,14 @@ class DataWindow(threading.Thread):
         
         self.yLabel = DataField(self.window, Point(40,225), "")
         self.xLabel = DataField(self.window, Point(540,545), "")
+        self.velLabel = DataField(self.window, Point(520,225), "")
         
         self.press = DataWithBar(self.window,Point(975,100),"(atm)",Point(775,90),Point(1175,110),pressMax, "blue")
-        self.dataFields = (self.altData, self.speedData, self.acclData, self.aTempData, self.bTempData, self.cTempData, self.yLabel, self.xLabel, self.press)
+        self.dataFields = (self.altData, self.speedData, self.acclData, self.aTempData, self.bTempData, self.cTempData, self.yLabel, self.xLabel, self.velLabel, self.press)
         
-        # GRAPH
+        # GRAPHS (With 2 graphs, lag begins about 115 seconds in.)
         self.altGraph = Graph(self.window, self.origin, self.yMax, self.xMax, self.currentAltMax, self.currentTMax, "blue")
+        self.speedGraph = Graph(self.window, Point(75,368), 157, self.xMax, 100, self.currentTMax, "green")
         
         #Thread events
         self.running = threading.Event()
@@ -117,9 +119,11 @@ class DataWindow(threading.Thread):
             self.dataFields[5].set(currentData[3])
             self.dataFields[6].set(self.altGraph.getAxisValues()[0])
             self.dataFields[7].set(self.altGraph.getAxisValues()[1])
-            self.dataFields[8].set(currentData[4])
-            # graph: 
+            self.dataFields[8].set(self.speedGraph.getAxisValues()[0])
+            self.dataFields[9].set(currentData[4])
+            # graphs: 
             self.altGraph.addData(self.altitude)
+            self.speedGraph.addData(self.speed)
             
 
             # record output
@@ -160,11 +164,18 @@ def setUp(window): # sets up the static elements of the data display
         Line(Point(75,200),Point(75,525)).draw(window) # graph y axis
         Line(Point(75,210),Point(65,210)).draw(window)
         
-        Line(Point(550,525),Point(75,525)).draw(window) # graph x axis
+        Line(Point(550,525),Point(75,525)).draw(window) # graph t axis
         Line(Point(540,535),Point(540,525)).draw(window)
         
         Text(Point(75,180), "Altitude (m)").draw(window) # graph y label
         Text(Point(313,570), "Time Since Launch (s)").draw(window) # graph x label
+        
+        Line(Point(75,368),Point(85,368)).draw(window) # velocity tick
+        Line(Point(550,368),Point(540,368)).draw(window)
+        Line(Point(550,200),Point(550,525)).draw(window) # velocity y axis
+        Text(Point(550,180), "Velocity (m/s)").draw(window)
+        Text(Point(560,368), "0").draw(window)
+        Line(Point(540,210),Point(550,210)).draw(window)
         
         Rectangle(Point(610,5),Point(1195,145)).draw(window) # other display box
         txt = Text(Point(680,30), "Speed:") # speed text
@@ -255,6 +266,7 @@ class Graph:
     #           initYmax: the initial data value for the maximum of the Y-axis.
     #           initTmax: the initial data value for the maximum of the T-axis.
     def __init__(self, window, origin, yLength, tLength, initYMax, initTMax, color):
+        self.graphicsFactor = 4.8 # the higher, the sooner the lines stop rendering. 5 causes no initial lag
         self.window = window
         self.origin = origin
         self.yLength = yLength
@@ -295,7 +307,7 @@ class Graph:
             p.setFill(self.color)
             self.displayPoints.append(p)
             p.draw(self.window)
-            if len(self.displayPoints) > 1 and len(self.displayPoints) < self.tLength:
+            if len(self.displayPoints) > 1 and len(self.displayPoints) < self.tLength / self.graphicsFactor:
                 l = Line(p,self.displayPoints[-2])
                 l.setFill(self.color)
                 l.draw(self.window)
@@ -321,7 +333,7 @@ class Graph:
         oldP = self.origin
         for p in self.displayPoints:
             p.draw(self.window)
-            if len(self.displayPoints) < self.tLength:
+            if len(self.displayPoints) < self.tLength / self.graphicsFactor:
                 l = Line(p,oldP)
                 l.setFill(self.color)
                 l.draw(self.window)
