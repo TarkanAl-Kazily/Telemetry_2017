@@ -2,6 +2,7 @@ import graphics as gw
 import time
 import math
 import threading
+import utility as util
 
 # Do I need this???
 GraphWin = gw.GraphWin
@@ -19,8 +20,8 @@ Image = gw.Image
 inputFile = "input1.txt" # name of file to read input from
 outputFile = "savedData.txt" # name of file where data is recorded
 aTempMax = 1000 # the temp/press when the bars are full
-bTempMax = 1000
-cTempMax = 1000
+bTempMax = 50
+cTempMax = 500
 pressMax = 1.5
 sampleTime = 0.5 # time between samples in seconds
 
@@ -40,8 +41,8 @@ class DataWindow(threading.Thread):
         self.currentAltMax = 1000.0 # graph starts with max at 1 km
         self.currentTMax = 5.0 # graph starts with max at 5 seconds
         self.origin = Point(75,525) # pixel at graph origin
-        self.yMax = 315 # pixel length of y axis
-        self.xMax = 465 # pixel length of x axis
+        self.yMax = 315 # pixel length of y axis #315
+        self.xMax = 465 # pixel length of x axis #465
         
         #Grab Args
         self.args=args
@@ -58,15 +59,22 @@ class DataWindow(threading.Thread):
         self.speedData = DataField(self.window, Point(780,30), "(m/s)")
         self.acclData = DataField(self.window, Point(1050,30), "(m/s^2)")
         
-        self.aTempData = DataWithBar(self.window, Point(950,200), "*C",Point(750,190),Point(1150,210), aTempMax, "red")
-        self.bTempData = DataWithBar(self.window, Point(950,250), "*C",Point(750,240),Point(1150,260), bTempMax, "red")
-        self.cTempData = DataWithBar(self.window, Point(950,300), "*C",Point(750,290),Point(1150,310), bTempMax, "red")
+        self.aTempData = DataWithBar(self.window, Point(950,200), 
+                                     "*C",Point(750,190),Point(1150,210), 
+                                     aTempMax, "green")
+        self.bTempData = DataWithBar(self.window, Point(950,250), 
+                                     "*C",Point(750,240),Point(1150,260), 
+                                     bTempMax, "red")
+        self.cTempData = DataWithBar(self.window, Point(950,300), 
+                                     "*C",Point(750,290),Point(1150,310), 
+                                     bTempMax, "pink")
         
         self.yLabel = DataField(self.window, Point(40,225), "")
         self.xLabel = DataField(self.window, Point(540,545), "")
         
         self.press = DataWithBar(self.window,Point(975,100),"(atm)",Point(775,90),Point(1175,110),pressMax, "blue")
-        self.dataFields = (self.altData, self.speedData, self.acclData, self.aTempData, self.bTempData, self.cTempData, self.yLabel, self.xLabel, self.press)
+        self.dataFields = (self.altData, self.speedData, self.acclData, self.aTempData, 
+                           self.bTempData, self.cTempData, self.yLabel, self.xLabel, self.press)
         
         # GRAPH
         self.altGraph = Graph(self.window, self.origin, self.yMax, self.xMax, self.currentAltMax, self.currentTMax, "blue")
@@ -90,6 +98,7 @@ class DataWindow(threading.Thread):
         
         self.running.set()
         self.paused.clear()
+        
         
         while self.running.isSet():
             timeStart = time.time()
@@ -138,7 +147,7 @@ class DataWindow(threading.Thread):
             
             
             while self.paused.isSet():
-                time.sleep(0.001)
+                time.sleep(0.03)
             #end of loop
             
         print("Exited Thread and Stopped")  
@@ -158,16 +167,8 @@ def setUp(window): # sets up the static elements of the data display
         txt.setSize(30)
         txt.draw(window)
         
-        Rectangle(Point(5,150),Point(600,595)).draw(window) # Altitude graph box
+        setUpGraph(window)
         
-        Line(Point(75,200),Point(75,525)).draw(window) # graph y axis
-        Line(Point(75,210),Point(65,210)).draw(window)
-        
-        Line(Point(550,525),Point(75,525)).draw(window) # graph x axis
-        Line(Point(540,535),Point(540,525)).draw(window)
-        
-        Text(Point(75,180), "Altitude (m)").draw(window) # graph y label
-        Text(Point(313,570), "Time Since Launch (s)").draw(window) # graph x label
         
         Rectangle(Point(610,5),Point(1195,145)).draw(window) # other display box
         txt = Text(Point(680,30), "Speed:") # speed text
@@ -182,16 +183,40 @@ def setUp(window): # sets up the static elements of the data display
         txt.setSize(15)
         txt.draw(window)
         
+        
+        
         Rectangle(Point(775,90),Point(1175,110)).draw(window) # pressure bar
-        Rectangle(Point(610,155),Point(1195,350)).draw(window) # temp display box
-        Text(Point(675,200), "PartA Temp:").draw(window)
-        Rectangle(Point(750,190),Point(1150,210)).draw(window)
-        Text(Point(675,250), "PartB Temp:").draw(window)
-        Rectangle(Point(750,240),Point(1150,260)).draw(window)
-        Text(Point(675,300), "PartC Temp:").draw(window)
-        Rectangle(Point(750,290),Point(1150,310)).draw(window)
-        Rectangle(Point(1100,550),Point(1195,595)).draw(window) # button box
-
+        
+        #margin of 40
+        Rectangle(Point(635,160),Point(1190,350)).draw(window) # temp display box
+        
+        setUpHorBarGraph(window, "PartA Temp:", 675, 200, 750, 190, 1150, 210)
+        setUpHorBarGraph(window, "PartB Temp:", 675, 250, 750, 240, 1150, 260)
+        setUpHorBarGraph(window, "PartC Temp:", 675, 290, 750, 290, 1150, 310)
+        #Text(Point(675,250), "PartB Temp:").draw(window)
+        #Rectangle(Point(750,240),Point(1150,260)).draw(window)
+        #Text(Point(675,300), "PartC Temp:").draw(window)
+        #Rectangle(Point(750,290),Point(1150,310)).draw(window)
+        
+        #Rectangle(Point(1100,550),Point(1195,595)).draw(window) # button box
+        
+#Add Sizing parameters
+def setUpGraph(window):
+    Rectangle(Point(5,150),Point(600,595)).draw(window) # Altitude graph box
+        
+    Line(Point(75,200),Point(75,525)).draw(window) # graph y axis
+    Line(Point(75,210),Point(65,210)).draw(window)
+    
+    Line(Point(550,525),Point(75,525)).draw(window) # graph x axis
+    Line(Point(540,535),Point(540,525)).draw(window)
+    
+    Text(Point(75,180), "Altitude (m)").draw(window) # graph y label
+    Text(Point(313,570), "Time Since Launch (s)").draw(window) # graph x label
+    
+def setUpHorBarGraph(window, name, name_x, name_y, bar_x, bar_y, barf_x, barf_y):
+    Text(Point(name_x, name_y), "PartA Temp:").draw(window)
+    Rectangle(Point(bar_x,bar_y),Point(barf_x, barf_y)).draw(window)
+    
 # A Data field that displays data... 
 class DataField:
     # Parameters: window: the Graphics Window 
