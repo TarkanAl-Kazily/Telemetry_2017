@@ -166,7 +166,8 @@ def setUp(window): # sets up the static elements of the data display
         setUpText(window, 90, 75, "Altitude:", 30)
         
         #Default: 595, 445
-        setUpGraph(window, 5, 150, 200, 300)
+        setUpGraph(window, 10, 150, 600, 440, "Altitude (m)", 
+                   "Time Since Launch (s)")
         
         
         Rectangle(Point(610,5),Point(1195,145)).draw(window) # other display box
@@ -202,20 +203,35 @@ def setUp(window): # sets up the static elements of the data display
         #Rectangle(Point(1100,550),Point(1195,595)).draw(window) # button box
         
 #Add Sizing parameters
-def setUpGraph(window, start_x, start_y, length, height):
+def setUpGraph(window, start_x, start_y, length, height, y_label="y", x_label="x"):
+    #Buffer which seeks to select the best buffer appropriate for the dimensions
+    #based on the dimensions of the smaller of the two dimensions
+    axis_buffer = max(70, min(length, height) * 0.05)
+    #TEST
+    print (axis_buffer) 
+    
     Rectangle(Point(start_x,start_y),
               Point(start_x+length,start_y+height)).draw(window) # Altitude graph box
     
-    #magic ration rn is 70 px to the right of frame
     #magic buffer for the line is fifty
-    Line(Point(start_x+70,start_y+50),Point(start_x+70,start_y+height-50)).draw(window) # graph y axis
-    Line(Point(start_x+70-10,start_y+50+10),Point(start_x+70,start_y+50+10)).draw(window)
+    Line(Point(start_x+axis_buffer,start_y+50),
+         Point(start_x+axis_buffer,start_y+height-50)
+         ).draw(window) # graph y axis
+         
+    Line(Point(start_x+axis_buffer-10,start_y+50+10),
+         Point(start_x+axis_buffer,start_y+50+10)
+         ).draw(window)
     
-    Line(Point(start_x+70,start_y+height-50),Point(start_x+length-70,start_y+height-50)).draw(window) # graph x axis
-    Line(Point(start_x+length-70,start_y+height-50+10),Point(start_x+length-70,start_y+height-50)).draw(window)
+    Line(Point(start_x+axis_buffer, start_y+height-50),
+         Point(start_x+length-axis_buffer, start_y+height-50)
+         ).draw(window) # graph x axis
+         
+    Line(Point(start_x+length-axis_buffer,start_y+height-50+10),
+         Point(start_x+length-axis_buffer,start_y+height-50)
+         ).draw(window)
     
-    Text(Point(75,180), "Altitude (m)").draw(window) # graph y label
-    Text(Point(313,570), "Time Since Launch (s)").draw(window) # graph x label
+    Text(Point(75,180), y_label).draw(window) # graph y label
+    Text(Point(313,570), x_label).draw(window) # graph x label
     
 def setUpHorBarGraph(window, name, name_x, name_y, bar_x, bar_y, length_x, length_y):
     Text(Point(name_x, name_y), "PartA Temp:").draw(window)
