@@ -161,38 +161,39 @@ def record(output, spacing, data):
     output.write("\n")
     
 def setUp(window): # sets up the static elements of the data display
+    
         Rectangle(Point(5,5),Point(600,140)).draw(window) # Altidude display box
+        setUpText(window, 90, 75, "Altitude:", 30)
         
-        txt = Text(Point(90,75), "Altitude:") # Altitude text
-        txt.setSize(30)
-        txt.draw(window)
-        
-        setUpGraph(window)
+        #Default: 595, 445
+        setUpGraph(window, 5, 150, 200, 300)
         
         
         Rectangle(Point(610,5),Point(1195,145)).draw(window) # other display box
-        txt = Text(Point(680,30), "Speed:") # speed text
-        txt.setSize(15)
-        txt.draw(window)
         
-        txt = Text(Point(950,30), "Y-accl:") # accl text
-        txt.setSize(15)
-        txt.draw(window)
+        setUpText(window, 680, 30, "Speed:", 15)
+        setUpText(window, 950, 30, "Y-accel:", 15)
+        setUpText(window, 700, 100, "Pressure:", 15)
+        #txt = Text(Point(680,30), "Speed:") # speed text
+        #txt.setSize(15)
+        #txt.draw(window)
         
-        txt = Text(Point(700, 100), "Pressure:") # pressure text
-        txt.setSize(15)
-        txt.draw(window)
+        #txt = Text(Point(950,30), "Y-accl:") # accl text
+        #txt.setSize(15)
+        #txt.draw(window)
         
-        
-        
+        #txt = Text(Point(700, 100), "Pressure:") # pressure text
+        #txt.setSize(15)
+        #txt.draw(window)
+
         Rectangle(Point(775,90),Point(1175,110)).draw(window) # pressure bar
         
         #margin of 40
-        Rectangle(Point(635,160),Point(1190,350)).draw(window) # temp display box
+        Rectangle(Point(615,160),Point(1190,350)).draw(window) # temp display box
         
-        setUpHorBarGraph(window, "PartA Temp:", 675, 200, 750, 190, 1150, 210)
-        setUpHorBarGraph(window, "PartB Temp:", 675, 250, 750, 240, 1150, 260)
-        setUpHorBarGraph(window, "PartC Temp:", 675, 290, 750, 290, 1150, 310)
+        setUpHorBarGraph(window, "PartA Temp:", 675, 200, 750, 190, 400, 20)
+        setUpHorBarGraph(window, "PartB Temp:", 675, 250, 750, 240, 400, 20)
+        setUpHorBarGraph(window, "PartC Temp:", 675, 290, 750, 290, 400, 20)
         #Text(Point(675,250), "PartB Temp:").draw(window)
         #Rectangle(Point(750,240),Point(1150,260)).draw(window)
         #Text(Point(675,300), "PartC Temp:").draw(window)
@@ -201,22 +202,34 @@ def setUp(window): # sets up the static elements of the data display
         #Rectangle(Point(1100,550),Point(1195,595)).draw(window) # button box
         
 #Add Sizing parameters
-def setUpGraph(window):
-    Rectangle(Point(5,150),Point(600,595)).draw(window) # Altitude graph box
-        
-    Line(Point(75,200),Point(75,525)).draw(window) # graph y axis
-    Line(Point(75,210),Point(65,210)).draw(window)
+def setUpGraph(window, start_x, start_y, length, height):
+    Rectangle(Point(start_x,start_y),
+              Point(start_x+length,start_y+height)).draw(window) # Altitude graph box
     
-    Line(Point(550,525),Point(75,525)).draw(window) # graph x axis
-    Line(Point(540,535),Point(540,525)).draw(window)
+    #magic ration rn is 70 px to the right of frame
+    #magic buffer for the line is fifty
+    Line(Point(start_x+70,start_y+50),Point(start_x+70,start_y+height-50)).draw(window) # graph y axis
+    Line(Point(start_x+70-10,start_y+50+10),Point(start_x+70,start_y+50+10)).draw(window)
+    
+    Line(Point(start_x+70,start_y+height-50),Point(start_x+length-70,start_y+height-50)).draw(window) # graph x axis
+    Line(Point(start_x+length-70,start_y+height-50+10),Point(start_x+length-70,start_y+height-50)).draw(window)
     
     Text(Point(75,180), "Altitude (m)").draw(window) # graph y label
     Text(Point(313,570), "Time Since Launch (s)").draw(window) # graph x label
     
-def setUpHorBarGraph(window, name, name_x, name_y, bar_x, bar_y, barf_x, barf_y):
+def setUpHorBarGraph(window, name, name_x, name_y, bar_x, bar_y, length_x, length_y):
     Text(Point(name_x, name_y), "PartA Temp:").draw(window)
-    Rectangle(Point(bar_x,bar_y),Point(barf_x, barf_y)).draw(window)
+    Rectangle(Point(bar_x,bar_y),Point(bar_x + length_x, bar_y + length_y)).draw(window)
     
+def setUpText(window, x_start=0, y_start=0, name="default", size=15):
+    txt = Text(Point(x_start, y_start), "Altitude:") # Altitude text
+    txt.setSize(size)
+    txt.draw(window)
+    
+#-------------------------------------------------------------------------------
+#        CLASSES
+#-------------------------------------------------------------------------------
+
 # A Data field that displays data... 
 class DataField:
     # Parameters: window: the Graphics Window 

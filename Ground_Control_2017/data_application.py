@@ -131,8 +131,8 @@ class Application(tk.Frame):
 			self.stop_all()
 		except:
 			print "Error: deletion issues"
-		
-		tk.Frame.quit(self)
+		finally:
+			tk.Frame.quit(self)
 	
 	def insertWindow(self):
 		#limit to the number of threads which can be run simultaneously
