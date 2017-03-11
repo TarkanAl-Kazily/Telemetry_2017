@@ -176,15 +176,7 @@ class DataWindow(threading.Thread):
         
         
         Rectangle(Point(5,5),Point(600,140)).draw(self.window) # Altidude display box
-<<<<<<< HEAD
-        setUpText(self.window, 90, 75, "Altitude:", 30)
-=======
         self.altData.setUp()    #setUpText(self.window, 90, 75, "Altitude:", 30)
-        
-        #Default: 595, 445
-        setUpGraph(self.window, 10, 150, 600, 440, "Altitude (m)", 
-                   "Time Since Launch (s)")
->>>>>>> branch 'modularized_disp' of https://github.com/TarkanAl-Kazily/Telemetry_2017.git
         
         
         Rectangle(Point(610,5),Point(1195,145)).draw(self.window) # other display box
@@ -303,6 +295,8 @@ class DataWithBar:
         self.max = maximum
         self.color = color
         self.box = Rectangle(Point(0,0),Point(0,0))
+        self.corner1 = corner1
+        self.corner2 = corner2
 
     def set(self, data):
         self.box.undraw()
@@ -312,7 +306,8 @@ class DataWithBar:
             self.line.setText(str(float(data)) + " " + self.unit)
             if float(data) > self.max:
                 data = self.max
-            self.box = Rectangle(self.upperLeft,Point(float(data) / self.max * (self.right - self.upperLeft.getX()) + self.upperLeft.getX(),self.bottom))
+            self.box = Rectangle(self.upperLeft,Point(float(data) / self.max * 
+                                (self.right - self.upperLeft.getX()) + self.upperLeft.getX(),self.bottom))
         self.box.setFill(self.color)
         self.box.draw(self.window)
         self.line.undraw()
@@ -320,8 +315,8 @@ class DataWithBar:
     
     #        window, name, name_x, name_y, bar_x, bar_y, length_x, length_y    
     def setUp(self):
-        Text(Point(self.uperLeft.getX() + 10, self.upperLeft.getY()), "PartA Temp:").draw(self.window)
-        Rectangle(corner1, corner2).draw(self.window)
+        Text(Point(self.upperLeft.getX() + 10, self.upperLeft.getY()), "PartA Temp:").draw(self.window)
+        Rectangle(self.corner1, self.corner2).draw(self.window)
     
 # Creates a 1-quadrant graph at specified location with vertical and horizontal
 #     length. New data can be added and will be plotted with respect to time. 
