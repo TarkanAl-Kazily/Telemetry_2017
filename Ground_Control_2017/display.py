@@ -176,14 +176,26 @@ class DataWindow(threading.Thread):
         
         
         Rectangle(Point(5,5),Point(600,140)).draw(self.window) # Altidude display box
+<<<<<<< HEAD
         setUpText(self.window, 90, 75, "Altitude:", 30)
+=======
+        self.altData.setUp()    #setUpText(self.window, 90, 75, "Altitude:", 30)
+        
+        #Default: 595, 445
+        setUpGraph(self.window, 10, 150, 600, 440, "Altitude (m)", 
+                   "Time Since Launch (s)")
+>>>>>>> branch 'modularized_disp' of https://github.com/TarkanAl-Kazily/Telemetry_2017.git
         
         
         Rectangle(Point(610,5),Point(1195,145)).draw(self.window) # other display box
         
-        setUpText(self.window, 680, 30, "Speed:", 15)
-        setUpText(self.window, 950, 30, "Y-accel:", 15)
-        setUpText(self.window, 700, 100, "Pressure:", 15)
+        self.speedData.setUp()
+        self.acclData.setUp()
+        self.press.setUp()
+        #setUpText(self.window, 680, 30, "Speed:", 15)
+        #setUpText(self.window, 950, 30, "Y-accel:", 15)
+        #setUpText(self.window, 700, 100, "Pressure:", 15)
+        
         #txt = Text(Point(680,30), "Speed:") # speed text
         #txt.setSize(15)
         #txt.draw(window)
@@ -201,9 +213,13 @@ class DataWindow(threading.Thread):
         #margin of 40
         Rectangle(Point(615,160),Point(1190,350)).draw(self.window) # temp display box
         
-        setUpHorBarGraph(self.window, "PartA Temp:", 675, 200, 750, 190, 400, 20)
-        setUpHorBarGraph(self.window, "PartB Temp:", 675, 250, 750, 240, 400, 20)
-        setUpHorBarGraph(self.window, "PartC Temp:", 675, 290, 750, 290, 400, 20)
+        self.aTempData.setUp()
+        self.bTempData.setUp()
+        self.cTempData.setUp()
+        #setUpHorBarGraph(self.window, "PartA Temp:", 675, 200, 750, 190, 400, 20)
+        #setUpHorBarGraph(self.window, "PartB Temp:", 675, 250, 750, 240, 400, 20)
+        #setUpHorBarGraph(self.window, "PartC Temp:", 675, 290, 750, 290, 400, 20)
+        
         #Text(Point(675,250), "PartB Temp:").draw(window)
         #Rectangle(Point(750,240),Point(1150,260)).draw(window)
         #Text(Point(675,300), "PartC Temp:").draw(window)
@@ -214,14 +230,6 @@ class DataWindow(threading.Thread):
 #Add Sizing parameters
 
     
-def setUpHorBarGraph(window, name, name_x, name_y, bar_x, bar_y, length_x, length_y):
-    Text(Point(name_x, name_y), "PartA Temp:").draw(window)
-    Rectangle(Point(bar_x,bar_y),Point(bar_x + length_x, bar_y + length_y)).draw(window)
-    
-def setUpText(window, x_start=0, y_start=0, name="default", size=15):
-    txt = Text(Point(x_start, y_start), "Altitude:") # Altitude text
-    txt.setSize(size)
-    txt.draw(window)
     
 def record(output, spacing, data):
     for d in data:
@@ -258,6 +266,7 @@ class DataField:
         self.window = window
         self.line.draw(self.window)
         self.unit = unit
+        self.location = location
     
     # sets and displays new data
     def set(self, data):
@@ -267,6 +276,12 @@ class DataField:
             self.line.setText("(No Data)")
         self.line.undraw()
         self.line.draw(self.window)
+    
+    #         window, x_start=0, y_start=0, name="default", size=15    
+    def setUp(self):
+        txt = Text(self.location, "Altitude:") # Altitude text
+        txt.setSize(15)
+        txt.draw(self.window)
 
 # displays data wiht a "temperature bar" that fills left to right based on value. 
 class DataWithBar:
@@ -302,6 +317,11 @@ class DataWithBar:
         self.box.draw(self.window)
         self.line.undraw()
         self.line.draw(self.window)
+    
+    #        window, name, name_x, name_y, bar_x, bar_y, length_x, length_y    
+    def setUp(self):
+        Text(Point(self.uperLeft.getX() + 10, self.upperLeft.getY()), "PartA Temp:").draw(self.window)
+        Rectangle(corner1, corner2).draw(self.window)
     
 # Creates a 1-quadrant graph at specified location with vertical and horizontal
 #     length. New data can be added and will be plotted with respect to time. 
