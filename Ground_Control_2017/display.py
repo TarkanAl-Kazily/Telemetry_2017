@@ -152,29 +152,30 @@ class DataWindow(threading.Thread):
             
         print("Exited Thread and Stopped")  
             
+    
+    def setUp(self): # sets up the static elements of the data display
         
-    
-
-def record(output, spacing, data):
-    for d in data:
-        output.write(str(d) + (spacing - len(str(d))) * " ")
-    output.write("\n")
-    
-def setUp(window): # sets up the static elements of the data display
-    
-        Rectangle(Point(5,5),Point(600,140)).draw(window) # Altidude display box
-        setUpText(window, 90, 75, "Altitude:", 30)
+        #@TODO fill out
+        #for container in self.containers:
+         #   try:
+          #      container.setUp()
+           # except:
+            #    print ("Illegal Container")
+        
+        
+        Rectangle(Point(5,5),Point(600,140)).draw(self.window) # Altidude display box
+        setUpText(self.window, 90, 75, "Altitude:", 30)
         
         #Default: 595, 445
-        setUpGraph(window, 10, 150, 600, 440, "Altitude (m)", 
+        setUpGraph(self.window, 10, 150, 600, 440, "Altitude (m)", 
                    "Time Since Launch (s)")
         
         
-        Rectangle(Point(610,5),Point(1195,145)).draw(window) # other display box
+        Rectangle(Point(610,5),Point(1195,145)).draw(self.window) # other display box
         
-        setUpText(window, 680, 30, "Speed:", 15)
-        setUpText(window, 950, 30, "Y-accel:", 15)
-        setUpText(window, 700, 100, "Pressure:", 15)
+        setUpText(self.window, 680, 30, "Speed:", 15)
+        setUpText(self.window, 950, 30, "Y-accel:", 15)
+        setUpText(self.window, 700, 100, "Pressure:", 15)
         #txt = Text(Point(680,30), "Speed:") # speed text
         #txt.setSize(15)
         #txt.draw(window)
@@ -187,21 +188,21 @@ def setUp(window): # sets up the static elements of the data display
         #txt.setSize(15)
         #txt.draw(window)
 
-        Rectangle(Point(775,90),Point(1175,110)).draw(window) # pressure bar
+        Rectangle(Point(775,90),Point(1175,110)).draw(self.window) # pressure bar
         
         #margin of 40
-        Rectangle(Point(615,160),Point(1190,350)).draw(window) # temp display box
+        Rectangle(Point(615,160),Point(1190,350)).draw(self.window) # temp display box
         
-        setUpHorBarGraph(window, "PartA Temp:", 675, 200, 750, 190, 400, 20)
-        setUpHorBarGraph(window, "PartB Temp:", 675, 250, 750, 240, 400, 20)
-        setUpHorBarGraph(window, "PartC Temp:", 675, 290, 750, 290, 400, 20)
+        setUpHorBarGraph(self.window, "PartA Temp:", 675, 200, 750, 190, 400, 20)
+        setUpHorBarGraph(self.window, "PartB Temp:", 675, 250, 750, 240, 400, 20)
+        setUpHorBarGraph(self.window, "PartC Temp:", 675, 290, 750, 290, 400, 20)
         #Text(Point(675,250), "PartB Temp:").draw(window)
         #Rectangle(Point(750,240),Point(1150,260)).draw(window)
         #Text(Point(675,300), "PartC Temp:").draw(window)
         #Rectangle(Point(750,290),Point(1150,310)).draw(window)
         
         #Rectangle(Point(1100,550),Point(1195,595)).draw(window) # button box
-        
+            
 #Add Sizing parameters
 def setUpGraph(window, start_x, start_y, length, height, y_label="y", x_label="x"):
     #Buffer which seeks to select the best buffer appropriate for the dimensions
@@ -242,15 +243,36 @@ def setUpText(window, x_start=0, y_start=0, name="default", size=15):
     txt.setSize(size)
     txt.draw(window)
     
+def record(output, spacing, data):
+    for d in data:
+        output.write(str(d) + (spacing - len(str(d))) * " ")
+    output.write("\n")
+    
 #-------------------------------------------------------------------------------
 #        CLASSES
 #-------------------------------------------------------------------------------
 
+class Container:
+    def __init__(self, window):
+        self.widgets = ()
+    
+    def add(self, component):
+        self.widgets.add(component)
+        
+    def setUp(self):
+        #@TODO first print box around all components
+        for component in self.widgets:
+            try:
+                component.setUp()
+            except:
+                print("Illegal Component Detected")
+            
+        
 # A Data field that displays data... 
 class DataField:
     # Parameters: window: the Graphics Window 
     #           location: the Point at the center of the display
-    #               unit: the unit associated wiht the data
+    #               unit: the unit associated with the data
     def __init__(self, window, location, unit):
         self.line = Text(location, "READY")
         self.window = window

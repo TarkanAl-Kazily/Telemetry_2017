@@ -121,6 +121,7 @@ class Application(tk.Frame):
 		self.quitB = tk.Button(self, text='Quit', command=self.quit)
 		self.quitB.grid(row=0, column=8, sticky=tk.N+tk.E)
 		
+		#Unnecessary without multi window functionality 
 		#Window button
 		#self.addWinB = tk.Button(self, text='New Window', command=self.insertWindow)
 		#self.addWinB.grid(row=0, column=6, columnspan=2,sticky=tk.N+tk.E)
@@ -170,7 +171,7 @@ class Application(tk.Frame):
 		#Set up window and display
 		newWin = gw.GraphWin("Data",1200,600, master=self)
 		newWin.grid(row=2, column=0, columnspan=20, rowspan=5)
-		disp.setUp(newWin)
+		
 
 		#set as active window and add to window dictionary
 		self.activeWindow = newWin
@@ -178,6 +179,8 @@ class Application(tk.Frame):
 		self.windows.update({name : newWin})
 		
 		dWin = disp.DataWindow(name=name, kwargs={'window':self.activeWindow})
+		dWin.setUp()
+		
 		self.tm.addThread(name, dWin)
 	
 	def start_test(self):
@@ -208,14 +211,10 @@ class Application(tk.Frame):
 		print "Deleting all threads"
 		for name in self.tm.threads.keys():
 			self.tm.stopThread(name)
-			
 	
-def test_thread():
-	t = threading.currentThread()
-	while getattr(t, "do_run", True):
-		print "Hello"
-		time.sleep(3)
-	
+#-------------------------------------------------------------------------------
+# SCRIPT TO RUN
+#-------------------------------------------------------------------------------
 
 app = Application(root)
 app.master.title('SARP Data Dominator')
