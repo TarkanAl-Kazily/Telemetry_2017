@@ -44,6 +44,7 @@ class DataWindow(threading.Thread):
         self.yMax = 315 # pixel length of y axis #315
         self.xMax = 465 # pixel length of x axis #465
         
+        
         #Grab Args
         self.args=args
         self.kwargs=kwargs
@@ -59,6 +60,7 @@ class DataWindow(threading.Thread):
         self.speedData = DataField(self.window, Point(780,30), "(m/s)")
         self.acclData = DataField(self.window, Point(1050,30), "(m/s^2)")
         
+        #init temperature objects
         self.aTempData = DataWithBar(self.window, Point(950,200), 
                                      "*C",Point(750,190),Point(1150,210), 
                                      aTempMax, "green")
@@ -79,11 +81,20 @@ class DataWindow(threading.Thread):
         # GRAPH
         self.altGraph = Graph(self.window, self.origin, self.yMax, self.xMax, self.currentAltMax, self.currentTMax, "blue")
         
+        self.containers = []
+        container1 = Container(self.window)
+        container1.add(self.altGraph)
+        self.containers.append(container1);
+        
         #Thread events
         self.running = threading.Event()
         self.paused = threading.Event()
         
-        
+        '''
+        #Default: 595, 445
+        setUpGraph(self.window, 10, 150, 600, 440, "Altitude (m)", 
+                   "Time Since Launch (s)")
+        '''
         return
         
     def run(self):
@@ -154,21 +165,18 @@ class DataWindow(threading.Thread):
             
     
     def setUp(self): # sets up the static elements of the data display
-        
-        #@TODO fill out
-        #for container in self.containers:
-         #   try:
-          #      container.setUp()
-           # except:
-            #    print ("Illegal Container")
+        '''
+        @todo: fill out
+        '''
+        for container in self.containers:
+            try:
+                container.setUp()
+            except:
+                print ("Illegal Container")
         
         
         Rectangle(Point(5,5),Point(600,140)).draw(self.window) # Altidude display box
         setUpText(self.window, 90, 75, "Altitude:", 30)
-        
-        #Default: 595, 445
-        setUpGraph(self.window, 10, 150, 600, 440, "Altitude (m)", 
-                   "Time Since Launch (s)")
         
         
         Rectangle(Point(610,5),Point(1195,145)).draw(self.window) # other display box
@@ -204,35 +212,7 @@ class DataWindow(threading.Thread):
         #Rectangle(Point(1100,550),Point(1195,595)).draw(window) # button box
             
 #Add Sizing parameters
-def setUpGraph(window, start_x, start_y, length, height, y_label="y", x_label="x"):
-    #Buffer which seeks to select the best buffer appropriate for the dimensions
-    #based on the dimensions of the smaller of the two dimensions
-    axis_buffer = max(70, min(length, height) * 0.05)
-    #TEST
-    print (axis_buffer) 
-    
-    Rectangle(Point(start_x,start_y),
-              Point(start_x+length,start_y+height)).draw(window) # Altitude graph box
-    
-    #magic buffer for the line is fifty
-    Line(Point(start_x+axis_buffer,start_y+50),
-         Point(start_x+axis_buffer,start_y+height-50)
-         ).draw(window) # graph y axis
-         
-    Line(Point(start_x+axis_buffer-10,start_y+50+10),
-         Point(start_x+axis_buffer,start_y+50+10)
-         ).draw(window)
-    
-    Line(Point(start_x+axis_buffer, start_y+height-50),
-         Point(start_x+length-axis_buffer, start_y+height-50)
-         ).draw(window) # graph x axis
-         
-    Line(Point(start_x+length-axis_buffer,start_y+height-50+10),
-         Point(start_x+length-axis_buffer,start_y+height-50)
-         ).draw(window)
-    
-    Text(Point(75,180), y_label).draw(window) # graph y label
-    Text(Point(313,570), x_label).draw(window) # graph x label
+
     
 def setUpHorBarGraph(window, name, name_x, name_y, bar_x, bar_y, length_x, length_y):
     Text(Point(name_x, name_y), "PartA Temp:").draw(window)
@@ -254,10 +234,11 @@ def record(output, spacing, data):
 
 class Container:
     def __init__(self, window):
-        self.widgets = ()
+        self.widgets = []
+        self.window = window
     
     def add(self, component):
-        self.widgets.add(component)
+        self.widgets.append(component)
         
     def setUp(self):
         #@TODO first print box around all components
@@ -266,7 +247,6 @@ class Container:
                 component.setUp()
             except:
                 print("Illegal Component Detected")
-            
         
 # A Data field that displays data... 
 class DataField:
@@ -336,8 +316,8 @@ class Graph:
     def __init__(self, window, origin, yLength, tLength, initYMax, initTMax, color):
         self.window = window
         self.origin = origin
-        self.yLength = yLength
-        self.tLength = tLength
+        self.yLength = yLength #y axis height
+        self.tLength = tLength  # x- axis width
         self.currentYMax = initYMax
         self.currentTMax = initTMax
         self.color = color # color of the lines and points
@@ -391,6 +371,44 @@ class Graph:
             p.setFill(self.color)
             newPoints.append(p)
         self.displayPoints =  newPoints
+        
+    #window, start_x, start_y, length, height, y_label="y", x_label="x"
+    def setUp(self):
+        #Buffer which seeks to select the best buffer appropriate for the dimensions
+        #based on the dimensions of the smaller of the two dimensions
+        axis_buffer = max(70, min(self.tLength, self.yLength) * 0.05)
+        nib_const = 0.9
+        #TEST
+        print (axis_buffer) 
+        
+        '''
+        Rectangle(Point(self.origin.getX(),self.origin.getY()),
+                  Point(self.origin.getX()+self.tLength,self.origin.getY()+self.yLength))
+                  .draw(window) # Altitude graph box
+        '''
+        
+        #magic buffer for the line is fifty
+        Line(Point(self.origin.getX(),self.origin.getY()+50),
+             Point(self.origin.getX(),self.origin.getY()-self.yLength-50)
+             ).draw(self.window) # graph y axis
+             
+        Line(Point(self.origin.getX()-10,self.origin.getY() - self.yLength * 0.9),
+             Point(self.origin.getX(),self.origin.getY() - self.yLength * 0.9)
+             ).draw(self.window) #lil nub thingie
+             
+        Line(Point(self.origin.getX(), self.origin.getY()),
+             Point(self.origin.getX()+self.tLength, self.origin.getY())
+             ).draw(self.window) # graph x axis
+             
+        Line(Point(self.origin.getX()+self.tLength-axis_buffer,self.origin.getY()),
+             Point(self.origin.getX()+self.tLength-axis_buffer,self.origin.getY())
+             ).draw(self.window)
+        
+        '''
+        @todo fix this shit
+        '''
+        #Text(Point(75,180), y_label).draw(window) # graph y label
+        #Text(Point(313,570), x_label).draw(window) # graph x label
 
 
 """def convert(points, origin):
