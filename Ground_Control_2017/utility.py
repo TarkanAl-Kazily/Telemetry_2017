@@ -111,7 +111,6 @@ class IllegalSerialAccess(Exception):
     '''
         Exception for when the serial port is incorrectly named.
     '''
-    
     def __init__(self, message):
         self.message = message
         

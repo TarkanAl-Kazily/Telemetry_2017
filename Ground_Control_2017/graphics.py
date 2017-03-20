@@ -731,6 +731,8 @@ class Text(GraphicsObject):
         self.anchor = p.clone()
         self.setFill(DEFAULT_CONFIG['outline'])
         self.setOutline = self.setFill
+        self.setFace("courier")
+        
 
     def __repr__(self):
         return "Text({}, '{}')".format(self.anchor, self.getText())
