@@ -70,18 +70,20 @@ class DataWindow(threading.Thread):
         #init temperature objects
         self.aTempData = DataWithBar(self.window, Point(950,200), 
                                      "*C",Point(750,190),Point(1150,210), 
-                                     aTempMax, "green")
+                                     aTempMax, "green", "Temp A: ")
         self.bTempData = DataWithBar(self.window, Point(950,250), 
                                      "*C",Point(750,240),Point(1150,260), 
-                                     bTempMax, "red")
+                                     bTempMax, "red", "Temp B: ")
         self.cTempData = DataWithBar(self.window, Point(950,300), 
                                      "*C",Point(750,290),Point(1150,310), 
-                                     bTempMax, "pink")
+                                     cTempMax, "pink", "Temp C: ")
         
         self.yLabel = DataField(self.window, Point(40,225), "")
         self.xLabel = DataField(self.window, Point(540,545), "")
         
-        self.press = DataWithBar(self.window,Point(975,100),"(atm)",Point(775,90),Point(1175,110),pressMax, "blue")
+        self.press = DataWithBar(self.window,Point(975,100),"(atm)",
+                                 Point(775,90), Point(1175,110),pressMax, 
+                                 "blue", "Pressure: ")
         self.dataFields = (self.altData, self.speedData, self.acclData, self.aTempData, 
                            self.bTempData, self.cTempData, self.yLabel, self.xLabel, self.press)
         
@@ -93,17 +95,21 @@ class DataWindow(threading.Thread):
         
         #make a bunch of containers
         self.containers = []
-        container1 = Container(self.window)
+        #graph container
+        container1 = Container(self.window, Point(5, 150), 600, 445)
         container1.add(self.altGraph)
-        container2 = Container(self.window)
+        #temperature container
+        container2 = Container(self.window, Point(610, 155), 580, 190)
         container2.add(self.aTempData)
         container2.add(self.bTempData)
         container2.add(self.cTempData)
-        container3 = Container(self.window)
+        #pressure and readings container
+        container3 = Container(self.window, Point(610, 5), 580, 140)
         container3.add(self.press)
         container3.add(self.acclData)
         container3.add(self.speedData)
-        container4 = Container(self.window)
+        #altitude container
+        container4 = Container(self.window, Point(5,5), 600, 140)
         container4.add(self.altData)
         
         #add the containers
@@ -206,8 +212,7 @@ class DataWindow(threading.Thread):
         #close the input stream    
         inputData.close()    
         print("Exited Thread and Stopped")  
-            
-    
+               
     def setUp(self): # sets up the static elements of the data display
         '''
         @todo: fill out
@@ -227,6 +232,7 @@ def record(output, spacing, data):
 #        CLASSES
 #-------------------------------------------------------------------------------
 
+#A class for holding other widgets, orienting them, and printing them
 class Container:
     '''
     Rectangle(Point(self.origin.getX(),self.origin.getY()),
@@ -234,24 +240,32 @@ class Container:
                      +self.yLength)).draw(self.window) # Altitude graph box
     '''
     
-    def __init__(self, window):
+    def __init__(self, window, position=Point(0,0), max_length=0, max_height=0):
         #the Items in this containers
         self.widgets = []
         #the window to draw stuff to
         self.window = window
         #The type of data to update
         self.types = []
+        self.origin = position #top left of where container is drawn
+        self.max_x = max_length #max length 
+        self.max_y = max_height
     
     def add(self, component):
+        '''
+        @todo: update container dimensions
+        '''
         self.widgets.append(component)
         
     def setUp(self):
-        #@TODO first print box around all components
+        Rectangle(self.origin, Point(self.origin.getX()+self.max_x,
+                                     self.origin.getY()+self.max_y)
+                                    ).draw(self.window)
         for component in self.widgets:
-            #try:
-            component.setUp()
-            #except:
-             #   print("Illegal Component Detected")
+            try:
+                component.setUp()
+            except:
+                print("Illegal Component Detected")
         
 # A Data field that displays data... 
 class DataField:
@@ -267,15 +281,15 @@ class DataField:
         self.location = location
         self.text_size =text_size
         self.text = text
-    
-    '''
-    @todo: add resizing features
-    '''
         
     # sets and displays new data
     def update(self, data):
-        if data != "NO":
+        if data != None:
+            temp = self.line.getText()
             self.line.setText(str(round(data, 1)) + " " + self.unit)
+            diff = len(self.line.getText()) - len(temp)
+            if diff > 0:
+                self.line._move(diff*self.text_size*0.5, 0)
         else:
             self.line.setText("(No Data)")
         self.line.undraw()
@@ -284,7 +298,7 @@ class DataField:
     #         window, x_start=0, y_start=0, name="default", size=15    
     def setUp(self):
         txt = Text(Point(self.location.getX() - len(self.text) * 
-                         self.text_size * 0.75, self.location.getY()), 
+                         self.text_size * 0.6, self.location.getY()), 
                          self.text) # Altitude text
         
         txt.setSize(self.text_size)
@@ -299,7 +313,9 @@ class DataWithBar:
     #            corner2: the lower right corner of the "temperature bar"
     #            maximum: the value at which the bar is completely filled
     #              color: the color of the bar
-    def __init__(self, window, txtLocation, unit, corner1, corner2, maximum, color):
+    def __init__(self, window, txtLocation, unit, corner1, corner2, 
+                 maximum, color, text="Default"):
+        
         self.line = Text(txtLocation, "READY")
         self.line.draw(window)
         self.window = window
@@ -310,8 +326,8 @@ class DataWithBar:
         self.max = maximum
         self.color = color
         self.box = Rectangle(Point(0,0),Point(0,0))
-        
         self.corner2 = corner2
+        self.label = text
 
     def update(self, data):
         self.box.undraw()
@@ -322,7 +338,8 @@ class DataWithBar:
             if float(data) > self.max:
                 data = self.max
             self.box = Rectangle(self.upperLeft,Point(float(data) / self.max * 
-                                (self.right - self.upperLeft.getX()) + self.upperLeft.getX(),self.bottom))
+                                (self.right - self.upperLeft.getX()) +
+                                 self.upperLeft.getX(),self.bottom))
         self.box.setFill(self.color)
         self.box.draw(self.window)
         self.line.undraw()
@@ -330,7 +347,8 @@ class DataWithBar:
     
     #        window, name, name_x, name_y, bar_x, bar_y, length_x, length_y    
     def setUp(self):
-        Text(Point(self.upperLeft.getX() + 10, self.upperLeft.getY()), "PartA Temp:").draw(self.window)
+        Text(Point(self.upperLeft.getX() + 10, self.upperLeft.getY()), 
+             self.label).draw(self.window)
         Rectangle(self.upperLeft, self.corner2).draw(self.window)
     
 # Creates a 1-quadrant graph at specified location with vertical and horizontal
