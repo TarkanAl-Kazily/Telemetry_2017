@@ -12,7 +12,7 @@ class Parser():
     #contains a serial object for recieving the string from  
     def __init__(self):
         self.ser = serial.Serial()
-        self.ser.baudrate(9600)
+        self.ser._baudrate=9600
         #number of items left in queue
         self.dataItemsAvailable = 0
         
@@ -47,6 +47,7 @@ class Parser():
     #Checks the serial report for strings, then parses string
     def update(self):
         '''
+            @todo: fix to use read() and in_waiting()
             @requires: serial port is open.
             @raise IllegalStateException: if the serial port is not open 
         '''

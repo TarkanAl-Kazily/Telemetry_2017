@@ -24,12 +24,16 @@ bTempMax = 50
 cTempMax = 500
 pressMax = 1.5
 sampleTime = 0.5 # time between samples in seconds
+portName = "COM4"
+#box buffer
+buffer = 5
 
 # initialize output
 output = open(outputFile, "a")
 
 #initialize parser
-
+parser = util.Parser()
+#parser.open_port(portName)
 
 class DataWindow(threading.Thread):
     def __init__(self, group=None, target=None, name=None,
@@ -87,7 +91,6 @@ class DataWindow(threading.Thread):
                               self.currentAltMax, self.currentTMax, "blue", 
                               "Time", "Alt")
         
-        if 
         #make a bunch of containers
         self.containers = []
         container1 = Container(self.window)
@@ -120,7 +123,9 @@ class DataWindow(threading.Thread):
         '''
         
     def run(self):
-        #CHANGE 
+        '''
+        @todo:  change
+        '''
         window = self.window
         
         #debug
@@ -131,7 +136,6 @@ class DataWindow(threading.Thread):
         
         self.running.set()
         self.paused.clear()
-        
         
         while self.running.isSet():
             timeStart = time.time()
@@ -152,10 +156,17 @@ class DataWindow(threading.Thread):
                 self.speed += float(currentData[0]) * sampleTime
             self.altitude += self.speed * sampleTime
             
-            for container in self.containers:
-                print "Update containers"
-                
-            #Update all the data fields
+            '''
+            @todo: add options for derived measurements
+            '''
+            #get data from parser and apply it
+            if (parser.is_available()): 
+                for container in self.containers:
+                    for widget in container.widgets:
+                        result = parser.get(widget.type)
+                        if (result != None):
+                            #feed in the data
+                            widget.update(result)
             
             
             '''
@@ -202,10 +213,10 @@ class DataWindow(threading.Thread):
         @todo: fill out
         '''
         for container in self.containers:
-            #try:
-            container.setUp()
-            #except:
-                #print ("Illegal Container")
+            try:
+                container.setUp()
+            except:
+                print ("Illegal Container")
                 
 def record(output, spacing, data):
     for d in data:
@@ -299,7 +310,7 @@ class DataWithBar:
         self.max = maximum
         self.color = color
         self.box = Rectangle(Point(0,0),Point(0,0))
-        self.corner1 = corner1
+        
         self.corner2 = corner2
 
     def update(self, data):
@@ -320,7 +331,7 @@ class DataWithBar:
     #        window, name, name_x, name_y, bar_x, bar_y, length_x, length_y    
     def setUp(self):
         Text(Point(self.upperLeft.getX() + 10, self.upperLeft.getY()), "PartA Temp:").draw(self.window)
-        Rectangle(self.corner1, self.corner2).draw(self.window)
+        Rectangle(self.upperLeft, self.corner2).draw(self.window)
     
 # Creates a 1-quadrant graph at specified location with vertical and horizontal
 #     length. New data can be added and will be plotted with respect to time. 
@@ -356,7 +367,8 @@ class Graph:
             self.points.append(Point(0, data * self.yLength / self.currentYMax))
             self.oldTime = time.time()
         else: 
-            self.points.append(Point(self.points[-1].getX() + self.tLength * (time.time() - self.oldTime) / self.currentTMax, data * self.yLength / self.currentYMax))
+            self.points.append(Point(self.points[-1].getX() + self.tLength * (time.time() - self.oldTime) / self.currentTMax, 
+                                     data * self.yLength / self.currentYMax))
             self.oldTime = time.time()
         while(data > self.currentYMax):
             oldMax = self.currentYMax
