@@ -29,11 +29,14 @@ portName = "COM4"
 buffer = 5
 
 # initialize output
-output = open(outputFile, "a")
+#output = open(outputFile, "a")
 
 #initialize parser
 parser = util.Parser()
-#parser.open_port(portName)
+try:
+    parser.open_port(portName)
+except:
+    print "No serial connected with "+ portName
 
 class DataWindow(threading.Thread):
     def __init__(self, group=None, target=None, name=None,
@@ -63,35 +66,46 @@ class DataWindow(threading.Thread):
         
         
         # initialize data fields
-        self.altData = DataField(self.window, Point(350,75), "(m)", "Altitude: ", 32)
-        self.speedData = DataField(self.window, Point(780,30), "(m/s)", "Speed: ")
-        self.acclData = DataField(self.window, Point(1050,30), "(m/s^2)", "Y-Accel: ")
+        self.altData = DataField(self.window, Point(350,75), "(m)", 
+                                 "Altitude: ", 32, "ALTI1")
+        self.speedData = DataField(self.window, Point(780,30), "(m/s)",
+                                   "Speed: ",15,"SPED1")
+        self.acclData = DataField(self.window, Point(1050,30), "(m/s^2)",
+                                  "Y-Accel: ",15,"ACCL1")
         
         #init temperature objects
         self.aTempData = DataWithBar(self.window, Point(950,200), 
                                      "*C",Point(750,190),Point(1150,210), 
-                                     aTempMax, "green", "Temp A: ")
+                                     aTempMax, "green", "Temp A: ", "TEMP1")
+        
         self.bTempData = DataWithBar(self.window, Point(950,250), 
                                      "*C",Point(750,240),Point(1150,260), 
-                                     bTempMax, "red", "Temp B: ")
+                                     bTempMax, "red", "Temp B: ", "TEMP2")
+        
         self.cTempData = DataWithBar(self.window, Point(950,300), 
                                      "*C",Point(750,290),Point(1150,310), 
-                                     cTempMax, "pink", "Temp C: ")
+                                     cTempMax, "pink", "Temp C: ","TEMP3")
         
+        '''
+        @todo: make a part of the graph class, not data fields 
+        '''
         self.yLabel = DataField(self.window, Point(40,225), "")
         self.xLabel = DataField(self.window, Point(540,545), "")
         
+        #makes a pressure bar graph
         self.press = DataWithBar(self.window,Point(975,100),"(atm)",
                                  Point(775,90), Point(1175,110),pressMax, 
-                                 "blue", "Pressure: ")
-        self.dataFields = (self.altData, self.speedData, self.acclData, self.aTempData, 
-                           self.bTempData, self.cTempData, self.yLabel, self.xLabel, self.press)
+                                 "blue", "Pressure: ", "PRES1")
+        
+        self.dataFields = (self.altData, self.speedData, self.acclData, 
+                           self.aTempData, self.bTempData, self.cTempData, 
+                           self.yLabel, self.xLabel, self.press)
         
         
         # GRAPH
         self.altGraph = Graph(self.window, self.origin, self.yMax, self.xMax, 
                               self.currentAltMax, self.currentTMax, "blue", 
-                              "Time", "Alt")
+                              "Time", "Alt", "ALTI1")
         
         #make a bunch of containers
         self.containers = []
@@ -146,6 +160,7 @@ class DataWindow(threading.Thread):
         while self.running.isSet():
             timeStart = time.time()
             
+            parser.update()
             # collect data for manipulation (acclY, aTemp, bTemp, cTemp)
             inputData = open(inputFile, "r")
             currentData = []
@@ -168,11 +183,11 @@ class DataWindow(threading.Thread):
             #get data from parser and apply it
             if (parser.is_available()): 
                 for container in self.containers:
-                    for widget in container.widgets:
-                        result = parser.get(widget.type)
+                    for item in container.items:
+                        result = parser.get(item.type)
                         if (result != None):
                             #feed in the data
-                            widget.update(result)
+                            item.update(result)
             
             
             '''
@@ -183,7 +198,7 @@ class DataWindow(threading.Thread):
             self.dataFields[0].update(self.altitude) #update alt data
             self.dataFields[1].update(self.speed)#update speed data
             self.dataFields[2].update(currentData[0])# update accel data
-            self.dataFields[3].update(currentData[1])# update tempa
+            #self.dataFields[3].update(currentData[1])# update tempa
             self.dataFields[4].update(currentData[2])# update tempb
             self.dataFields[5].update(currentData[3])# update tempc
             self.dataFields[6].update(self.altGraph.getAxisValues()[0]) #update y axis bounds
@@ -232,7 +247,7 @@ def record(output, spacing, data):
 #        CLASSES
 #-------------------------------------------------------------------------------
 
-#A class for holding other widgets, orienting them, and printing them
+#A class for holding other items, orienting them, and printing them
 class Container:
     '''
     Rectangle(Point(self.origin.getX(),self.origin.getY()),
@@ -242,7 +257,7 @@ class Container:
     
     def __init__(self, window, position=Point(0,0), max_length=0, max_height=0):
         #the Items in this containers
-        self.widgets = []
+        self.items = []
         #the window to draw stuff to
         self.window = window
         #The type of data to update
@@ -255,13 +270,13 @@ class Container:
         '''
         @todo: update container dimensions
         '''
-        self.widgets.append(component)
+        self.items.append(component)
         
     def setUp(self):
         Rectangle(self.origin, Point(self.origin.getX()+self.max_x,
                                      self.origin.getY()+self.max_y)
                                     ).draw(self.window)
-        for component in self.widgets:
+        for component in self.items:
             try:
                 component.setUp()
             except:
@@ -272,7 +287,7 @@ class DataField:
     # Parameters: window: the Graphics Window 
     #           location: the Point at the center of the display
     #               unit: the unit associated with the data
-    def __init__(self, window, location, unit, text="Default", text_size=15):
+    def __init__(self, window, location, unit, text="Default", text_size=15, type="DEF"):
         self.line = Text(location, "READY")
         self.line.setSize(text_size)
         self.window = window
@@ -281,6 +296,7 @@ class DataField:
         self.location = location
         self.text_size =text_size
         self.text = text
+        self.type = type
         
     # sets and displays new data
     def update(self, data):
@@ -314,8 +330,7 @@ class DataWithBar:
     #            maximum: the value at which the bar is completely filled
     #              color: the color of the bar
     def __init__(self, window, txtLocation, unit, corner1, corner2, 
-                 maximum, color, text="Default"):
-        
+                 maximum, color, text="Default", type="DEF"):
         self.line = Text(txtLocation, "READY")
         self.line.draw(window)
         self.window = window
@@ -328,6 +343,7 @@ class DataWithBar:
         self.box = Rectangle(Point(0,0),Point(0,0))
         self.corner2 = corner2
         self.label = text
+        self.type = type
 
     def update(self, data):
         self.box.undraw()
@@ -364,7 +380,7 @@ class Graph:
     #            x_label: label for the bottom axis
     #            y_label: label for the top axis
     def __init__(self, window, origin, yLength, tLength, initYMax, 
-                 initTMax, color, x_label, y_label):
+                 initTMax, color, x_label, y_label, type="DEF"):
         self.window = window
         self.origin = origin
         self.yLength = yLength #y axis height
@@ -378,6 +394,7 @@ class Graph:
         self.oldTime = 0 # tracks last 
         self.x_label = x_label
         self.y_label = y_label
+        self.type = type
     
     # adds a data point and redraws graph
     def update(self, data): # takes a data point and redraws the graph

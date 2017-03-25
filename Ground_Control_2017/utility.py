@@ -2,9 +2,8 @@
 import multiprocessing as mp
 import serial
 from collections import deque
-'''
-@
-'''
+inputFile = "sample_input.txt"
+input = None
 
 class Parser():
     
@@ -15,7 +14,9 @@ class Parser():
         self.ser._baudrate=9600
         #number of items left in queue
         self.dataItemsAvailable = 0
+        self.dataDict = {}
         
+        '''        
         self.velQ = deque([])         # initializing as empty queues
         self.accelQ = deque([])
         self.altQ = deque([])
@@ -24,25 +25,29 @@ class Parser():
         self.cTempQ = deque([])
         self.pressQ = deque([])
         self.gyroQ = deque([])
-        self.dataDict = {'Vel': self.velQ, 'Accel': self.accelQ, 'Alt': self.altQ, 'aTemp': self.aTempQ, 'bTemp': self.bTempQ,
-                        'cTemp': self.cTempQ,'Press': self.pressQ, 'Gyro': self.gyroQ}
-        
+
+        self.dataDict = {'Vel': self.velQ, 'Accel': self.accelQ, 
+                         'Alt': self.altQ, 'aTemp': self.aTempQ, 
+                         'bTemp': self.bTempQ,'cTemp': self.cTempQ,
+                         'Press': self.pressQ, 'Gyro': self.gyroQ}
+        '''
     #opens serial port which was initialized with given name
     #For windows, name will be like 'COM4'
     #For pi, the name will be something like '/dev/tty.usbserial'
     def open_port(self, portName):
         try:
-            self.ser = serial.Serial(portName, timeout=2) #open serial port
+            self.ser = serial.Serial(portName, timeout=2, baudrate=9600) #open serial port
+            self.ser.flush()
         except:
-            raise IllegalSerialAccess("No serial port with name: " + portName)
+            print "Going into file mode"
+            self.input = open(inputFile, "r")
+            #raise IllegalSerialAccess("No serial port with name: " + portName)
         
         #prints the name to console to ensure the connection is accurate
         print self.ser.name
         
         #returns whether or not the port is open
         return self.ser.is_open
-    
-    
     
     #Checks the serial report for strings, then parses string
     def update(self):
@@ -52,11 +57,24 @@ class Parser():
             @raise IllegalStateException: if the serial port is not open 
         '''
         if (self.ser.isOpen()):
-            type, measurement = parse_string(self.ser.next())
+            temp = self.ser.readline()
+        else:
+            temp = self.input.readline()
+            temp = temp[1:-2]
+            print temp
+            
+        if len(temp) > 0 :
+            type, measurement = self.parse_string(temp)
             print type
             print measurement
-            add_to_queue(type, measurement)
-        
+            '''
+            @todo: check for consistency in types and measurements
+            '''
+            if not self.dataDict.has_key(type):
+                temp = {type : deque([])}
+                self.dataDict.update(temp)
+                
+            self.add_to_queue(type, measurement)
     
     def isEmpty(self, queue):
         return queue == deque([])
@@ -79,7 +97,10 @@ class Parser():
             @modifies: if the queueName is not None and is not in the dictionary 
             of queues, add it to the dictionary and update;
         '''
-        self.dataDict.get(dataType).append(measurement)
+        '''
+        @todo: edit to only accept a 
+        '''
+        self.dataDict.get(dataType).append(value)
         self.dataItemsAvailable += 1
     
     #says whether or not a queue has at least one element    
@@ -99,13 +120,15 @@ class Parser():
             @return: if the name is not None and is in the dictionary, return
             the first value in the queue if there exists one. else, return None
         '''
-        if (self.isEmpty(dataDict.get(type))):
+        if (self.dataDict.get(dataType) == None or 
+            self.isEmpty(self.dataDict.get(dataType))):
+        #if ():
             return None
         else:
-            data = self.dataDict.get(type).pop()
+            data = self.dataDict.get(dataType).pop()
             self.dataItemsAvailable -= 1
                 
-            return data
+            return float(data)
         
         
 class IllegalSerialAccess(Exception):   
