@@ -16,21 +16,6 @@ class Parser():
         self.dataItemsAvailable = 0
         self.dataDict = {}
         
-        '''        
-        self.velQ = deque([])         # initializing as empty queues
-        self.accelQ = deque([])
-        self.altQ = deque([])
-        self.aTempQ = deque([])
-        self.bTempQ = deque([])
-        self.cTempQ = deque([])
-        self.pressQ = deque([])
-        self.gyroQ = deque([])
-
-        self.dataDict = {'Vel': self.velQ, 'Accel': self.accelQ, 
-                         'Alt': self.altQ, 'aTemp': self.aTempQ, 
-                         'bTemp': self.bTempQ,'cTemp': self.cTempQ,
-                         'Press': self.pressQ, 'Gyro': self.gyroQ}
-        '''
     #opens serial port which was initialized with given name
     #For windows, name will be like 'COM4'
     #For pi, the name will be something like '/dev/tty.usbserial'
@@ -122,7 +107,6 @@ class Parser():
         '''
         if (self.dataDict.get(dataType) == None or 
             self.isEmpty(self.dataDict.get(dataType))):
-        #if ():
             return None
         else:
             data = self.dataDict.get(dataType).pop()
