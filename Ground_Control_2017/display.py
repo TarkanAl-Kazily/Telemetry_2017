@@ -25,7 +25,7 @@ cTempMax = 500
 pressMax = 1000
 sampleTime = 0.5 # time between samples in seconds
 portName = "COM4"
-#box buffer
+#Container box buffer
 buffer = 5
 
 # initialize output
@@ -62,13 +62,20 @@ class DataWindow(threading.Thread):
         
         #Grab window from kwargs
         self.window = kwargs['window']
+        self.types_to_objects = {}
         
         
         # initialize data fields
+        '''
         self.altData = DataField(self.window, Point(350,75), "(m)", 
                                  "Altitude: ", 32, "ALTI1")
         self.speedData = DataField(self.window, Point(780,30), "(m/s)",
                                    "Speed: ",15,"SPED1")
+        '''
+        self.altData = DataField(self.window, Point(350,75), "(m)", 
+                                 "Altitude: ", 32, "ACCL1")
+        self.speedData = DataField(self.window, Point(780,30), "(m/s)",
+                                   "Speed: ",15,"ACCL1")
         self.acclData = DataField(self.window, Point(1050,30), "(m/s^2)",
                                   "Y-Accel: ",15,"ACCL1")
         
@@ -102,7 +109,7 @@ class DataWindow(threading.Thread):
         # GRAPH
         self.altGraph = Graph(self.window, self.origin, self.yMax, self.xMax, 
                               self.currentAltMax, self.currentTMax, "blue", 
-                              "Time", "Alt", "ALTI1")
+                              "Time", "Alt", "ACCL1")
         
         #make a bunch of containers
         self.containers = []
@@ -122,6 +129,18 @@ class DataWindow(threading.Thread):
         #altitude container
         container4 = Container(self.window, Point(5,5), 600, 140)
         container4.add(self.altData)
+        
+        
+        self.__register_type_callback(self.altGraph)
+        self.__register_type_callback(self.aTempData)
+        self.__register_type_callback(self.bTempData)
+        self.__register_type_callback(self.cTempData)
+        self.__register_type_callback(self.press)
+        self.__register_type_callback(self.acclData)
+        #Instead register a speed object with reference to speedData
+        #self.__register_type_callback(self.speedData)
+        self.__register_type_callback(Speed(object=self.speedData))
+        self.__register_type_callback(self.altData)
         
         #add the containers
         self.containers.append(container1);
@@ -159,22 +178,35 @@ class DataWindow(threading.Thread):
                 self.speed += float(currentData[0]) * sampleTime
             self.altitude += self.speed * sampleTime
             
+            
             '''
             @todo: add options for derived measurements
+            '''
+            
             '''
             #get data from parser and apply it
             if (parser.is_available()): 
                 for container in self.containers:
                     for item in container.items:
+                        #look for item type in queue
                         result = parser.get(item.type)
+                        #apply updated data 
                         if (result != None):
                             #feed in the data
                             item.update(result)
+            '''
+            #get data from parser and apply it
+            if (parser.is_available()): 
+                for key in self.types_to_objects.keys():
+                    data = parser.get(key)
+                    if data != None:
+                        #update all the items linked to this data type
+                        for item in self.types_to_objects[key]:
+                            item.update(data)
             
-    
             #update data fields
-            self.dataFields[0].update(self.altitude) #update alt data
-            self.dataFields[1].update(self.speed)#update speed data
+            #self.dataFields[0].update(self.altitude) #update alt data
+            #self.dataFields[1].update(self.speed)#update speed data
             #self.dataFields[2].update(currentData[0])# update accel data
             #self.dataFields[3].update(currentData[1])# update tempa
             #self.dataFields[4].update(currentData[2])# update tempb
@@ -182,7 +214,7 @@ class DataWindow(threading.Thread):
             #self.dataFields[6].update(self.altGraph.getAxisValues()[0]) #update y axis bounds
             #self.dataFields[7].update(self.altGraph.getAxisValues()[1]) #update x axis bounds
             #self.dataFields[8].update(currentData[4]) #update pressure
-            self.altGraph.update(self.altitude)
+            #self.altGraph.update(self.altitude)
             
             # reports if render time is greater than sample time.
             if time.time() - timeStart > sampleTime:
@@ -209,15 +241,57 @@ class DataWindow(threading.Thread):
             except:
                 print ("Illegal Container")
                 
+    def __register_type_callback(self, object):
+        '''
+        @todo: enforce that has type field and update method
+        '''
+        type = object.type
+        
+        '''
+        @todo: can be reduced to one line i think
+        '''
+        if (self.types_to_objects.has_key(type)):
+            self.types_to_objects[type].append(object)
+        else:
+            self.types_to_objects.update({type:[object]})
+                
 def record(output, spacing, data):
     for d in data:
         output.write(str(d) + (spacing - len(str(d))) * " ")
     output.write("\n")
+
     
 #-------------------------------------------------------------------------------
 #        CLASSES
 #-------------------------------------------------------------------------------
 
+'''
+class DataDistributer:
+    
+    def __init__(self):
+        #map of strings representing type names
+        #to objects with a update method and a type field
+        self.types_to_objects = {}
+        
+    def register_type_callback(self, object):
+       
+        type = object.type
+        
+
+        if (self.types_to_objects.has_key(type)):
+            self.types_to_objects[type].append(object)
+        else:
+            self.types_to_objects.update({type:[object]})
+        
+    def update_all(self):
+        for key in self.types_to_objects.keys():
+            data = parser.get(key)
+            if data != None:
+                #update all the items linked to this data type
+                for item in self.types_to_objects[key]:
+                    item.update(data)
+'''
+        
 #A class for holding other items, orienting them, and printing them
 class Container:
     '''
@@ -258,7 +332,8 @@ class DataField:
     # Parameters: window: the Graphics Window 
     #           location: the Point at the center of the display
     #               unit: the unit associated with the data
-    def __init__(self, window, location, unit, text="Default", text_size=15, type="DEF"):
+    def __init__(self, window, location, unit, text="Default", text_size=15, 
+                 type="DEF"):
         self.line = Text(location, "READY")
         self.line.setSize(text_size)
         self.window = window
@@ -475,6 +550,20 @@ class Graph:
         self.x_bounds.draw(self.window)
         self.y_bounds.draw(self.window)
 
+class Speed:
+    def __init__(self, object, type="ACCL1"):
+        self.type = type
+        self.callback_ref = object
+        self.speed = 0.0
+        
+    def update(self, data):
+        '''
+        if currentData[0] != "NO":
+                self.speed += float(currentData[0]) * sampleTime
+                '''
+        self.speed += float(data) * sampleTime
+        self.callback_ref.update(self.speed)
+        
 # record output
 #recordTime = str(time.localtime(time.time())[4]) + ", " + str(round(time.localtime(time.time())[5] + math.modf(time.time())[0],2))
 #record(output, 14, (recordTime, currentData[0], round(self.speed, 2), round(self.altitude, 2), currentData[1], currentData[2], currentData[3], currentData[4]))

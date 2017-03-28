@@ -42,7 +42,8 @@ class ThreadManager():
 		
 	def stopThread(self, name):
 		try:
-			if (self.threads.has_key(name)):
+			if (self.threads.has_key(name) and 
+				self.threads[name].running.isSet()):
 				self.threads[name].paused.clear()
 				self.threads[name].running.clear()
 				self.threads[name].join()
