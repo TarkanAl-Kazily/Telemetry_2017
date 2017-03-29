@@ -44,8 +44,8 @@ class Parser():
         if (self.ser.isOpen()):
             temp = self.ser.readline()
         else:
-            temp = self.input.readline()
-            temp = temp[1:-2]
+            temp = self.input.readline().strip()
+            temp = temp[1:len(temp)-2]
             print temp
             
         if len(temp) > 0 :
