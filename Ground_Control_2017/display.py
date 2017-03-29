@@ -588,7 +588,6 @@ class Speed:
 # record output
 #recordTime = str(time.localtime(time.time())[4]) + ", " + str(round(time.localtime(time.time())[5] + math.modf(time.time())[0],2))
 #record(output, 14, (recordTime, currentData[0], round(self.speed, 2), round(self.altitude, 2), currentData[1], currentData[2], currentData[3], currentData[4]))
- '''
 
     
     
@@ -661,4 +660,3 @@ def convert(points, origin):
                     self.displayLines.append(l)
                     oldP = p"""
                     
-           '''
