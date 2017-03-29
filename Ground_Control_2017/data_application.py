@@ -1,18 +1,21 @@
 #!/usr/bin/env python
 try:  # import as appropriate for 2.x vs. 3.x
-   import tkinter as tk
+	import tkinter as tk
 except:
-   import Tkinter as tk
+	import Tkinter as tk
 import graphics as gw
 import display as disp
 import threading
 import time
 
 
-#Tkinter root 
+#Tkinter root
+#graphics lib complains when it does not get the original instantiation 
 root = gw._root
 
+
 class ThreadManager():
+	
 	def __init__(self):
 		self.threads = {}
 		self.size = 0
@@ -39,7 +42,8 @@ class ThreadManager():
 		
 	def stopThread(self, name):
 		try:
-			if (self.threads.has_key(name)):
+			if (self.threads.has_key(name) and 
+				self.threads[name].running.isSet()):
 				self.threads[name].paused.clear()
 				self.threads[name].running.clear()
 				self.threads[name].join()
@@ -99,16 +103,14 @@ class Application(tk.Frame):
 	"""
 	def __init__(self, master=None):
 		tk.Frame.__init__(self, master)
-		self.grid(sticky=tk.N+tk.S+tk.E+tk.W)
-		self.createWidgets()
-		self.tm = ThreadManager() #house all the threads
-		master.minsize(width=666, height=666)#Change to new window
-		
 		self.windows={}#Dictionary to hold windows
 		self.windowList = [None] * 5
-        #disp.Serial().run() ############################################################################## Cole put this here to test his run() method
-		#a = numpy.empty(n, dtype=object)
-			
+		self.tm = ThreadManager() #house all the threads
+		self.grid(sticky=tk.N+tk.S+tk.E+tk.W)
+		self.createWidgets()
+		
+		master.minsize(width=666, height=666)#Change to new window
+
 	def createWidgets(self):
 		top=self.winfo_toplevel() 
 		top.rowconfigure(0, weight=1) 
@@ -120,17 +122,19 @@ class Application(tk.Frame):
 		self.quitB = tk.Button(self, text='Quit', command=self.quit)
 		self.quitB.grid(row=0, column=8, sticky=tk.N+tk.E)
 		
+		#Unnecessary without multi window functionality 
 		#Window button
-		self.addWinB = tk.Button(self, text='New Window', command=self.insertWindow)
-		self.addWinB.grid(row=0, column=6, columnspan=2,sticky=tk.N+tk.E)
+		#self.addWinB = tk.Button(self, text='New Window', command=self.insertWindow)
+		#self.addWinB.grid(row=0, column=6, columnspan=2,sticky=tk.N+tk.E)
+		self.insertWindow()
 
 	def quit(self):
 		try:
 			self.stop_all()
 		except:
 			print "Error: deletion issues"
-		
-		tk.Frame.quit(self)
+		finally:
+			tk.Frame.quit(self)
 	
 	def insertWindow(self):
 		#limit to the number of threads which can be run simultaneously
@@ -140,12 +144,13 @@ class Application(tk.Frame):
 			name = "DataWin " + str(index)
 			self.setUpWindow(name)
 			
-			#Window Button
-			self.windowList[index] = name
-			self.v = tk.StringVar()
-			self.v.set(self.windowList[0])
-			self.winOM = tk.OptionMenu(self,self.v, *self.windowList,command=self.selectOpt)
-			self.winOM.grid(row=3, column=0)
+			#Unnecessary without multi window functionality 
+			#Window Button 
+			#self.windowList[index] = name
+			#self.v = tk.StringVar()
+			#self.v.set(self.windowList[0])
+			#self.winOM = tk.OptionMenu(self,self.v, *self.windowList,command=self.selectOpt)
+			#self.winOM.grid(row=3, column=0)
 			
 			#Start Test button
 			self.winStartB = tk.Button(self, text='Start Test', command=self.start_test)
@@ -159,15 +164,15 @@ class Application(tk.Frame):
 			self.winStopB = tk.Button(self, text='Stop', command=self.stop_test)
 			self.winStopB.grid(row=1, column=8)
 			
-			
+		
 	
 			root.update()
 			
 	def setUpWindow(self, name):
 		#Set up window and display
-		newWin = gw.GraphWin("Data",1300,600, master=self)
-		newWin.grid(row=4, column=0, columnspan=20, rowspan=5)
-		disp.setUp(newWin)
+
+		newWin = gw.GraphWin("Data",1200,600, master=self)
+		newWin.grid(row=2, column=0, columnspan=20, rowspan=5)
 
 		#set as active window and add to window dictionary
 		self.activeWindow = newWin
@@ -175,6 +180,8 @@ class Application(tk.Frame):
 		self.windows.update({name : newWin})
 		
 		dWin = disp.DataWindow(name=name, kwargs={'window':self.activeWindow})
+		dWin.setUp()
+		
 		self.tm.addThread(name, dWin)
 	
 	def start_test(self):
@@ -205,14 +212,10 @@ class Application(tk.Frame):
 		print "Deleting all threads"
 		for name in self.tm.threads.keys():
 			self.tm.stopThread(name)
-			
 	
-def test_thread():
-	t = threading.currentThread()
-	while getattr(t, "do_run", True):
-		print "Hello"
-		time.sleep(3)
-	
+#-------------------------------------------------------------------------------
+# SCRIPT TO RUN
+#-------------------------------------------------------------------------------
 
 app = Application(root)
 app.master.title('SARP Data Dominator')

@@ -2,6 +2,7 @@ import graphics as gw
 import time
 import math
 import threading
+import utility as util
 
 # Do I need this???
 GraphWin = gw.GraphWin
@@ -19,14 +20,23 @@ Image = gw.Image
 inputFile = "input1.txt" # name of file to read input from
 outputFile = "savedData.txt" # name of file where data is recorded
 aTempMax = 1000 # the temp/press when the bars are full
-bTempMax = 1000
-cTempMax = 1000
-pressMax = 1.5
+bTempMax = 50
+cTempMax = 500
+pressMax = 1000
 sampleTime = 0.5 # time between samples in seconds
+portName = "COM4"
+#Container box buffer
+buffer = 5
 
 # initialize output
-output = open(outputFile, "a")
+#output = open(outputFile, "a")
 
+#initialize parser
+parser = util.Parser()
+try:
+    parser.open_port(portName)
+except:
+    print "No serial connected with "+ portName
 
 class DataWindow(threading.Thread):
     def __init__(self, group=None, target=None, name=None,
@@ -39,51 +49,113 @@ class DataWindow(threading.Thread):
         self.altitude = 0 # m
         self.currentAltMax = 1000.0 # graph starts with max at 1 km
         self.currentTMax = 5.0 # graph starts with max at 5 seconds
+        #75, 525 
         self.origin = Point(75,525) # pixel at graph origin
-        self.yMax = 315 # pixel length of y axis
-        self.xMax = 465 # pixel length of x axis
+        self.yMax = 315 # pixel length of y axis #315
+        self.xMax = 465 # pixel length of x axis #465
+        
         
         #Grab Args
         self.args=args
         self.kwargs=kwargs
-        
         self.name = name
         
-        #IMPLEMENT GRABBING WINDOW FROM KWARGS
+        #Grab window from kwargs
         self.window = kwargs['window']
+        self.types_to_objects = {}
+        
         
         # initialize data fields
-        self.altData = DataField(self.window, Point(350,75), "(m)")
-        self.altData.line.setSize(32)
-        self.speedData = DataField(self.window, Point(780,30), "(m/s)")
-        self.acclData = DataField(self.window, Point(1050,30), "(m/s^2)")
+        '''
+        self.altData = DataField(self.window, Point(350,75), "(m)", 
+                                 "Altitude: ", 32, "ALTI1")
+        self.speedData = DataField(self.window, Point(780,30), "(m/s)",
+                                   "Speed: ",15,"SPED1")
+        '''
+        self.altData = DataField(self.window, Point(350,75), "(m)", 
+                                 "Altitude: ", 32, "ACCL1")
+        self.speedData = DataField(self.window, Point(780,30), "(m/s)",
+                                   "Speed: ",15,"ACCL1")
+        self.acclData = DataField(self.window, Point(1050,30), "(m/s^2)",
+                                  "Y-Accel: ",15,"ACCL1")
         
-        self.aTempData = DataWithBar(self.window, Point(950,200), "*C",Point(750,190),Point(1150,210), aTempMax, "red")
-        self.bTempData = DataWithBar(self.window, Point(950,250), "*C",Point(750,240),Point(1150,260), bTempMax, "red")
-        self.cTempData = DataWithBar(self.window, Point(950,300), "*C",Point(750,290),Point(1150,310), bTempMax, "red")
+        #init temperature objects
+        self.aTempData = DataWithBar(self.window, Point(950,200), 
+                                     "*C",Point(750,190),Point(1150,210), 
+                                     aTempMax, "green", "Temp A: ", "TEMP1")
         
+        self.bTempData = DataWithBar(self.window, Point(950,250), 
+                                     "*C",Point(750,240),Point(1150,260), 
+                                     bTempMax, "red", "Temp B: ", "TEMP2")
+        
+        self.cTempData = DataWithBar(self.window, Point(950,300), 
+                                     "*C",Point(750,290),Point(1150,310), 
+                                     cTempMax, "pink", "Temp C: ","TEMP3")
+        
+        '''
         self.yLabel = DataField(self.window, Point(40,225), "")
         self.xLabel = DataField(self.window, Point(540,545), "")
-        self.velLabel = DataField(self.window, Point(520,225), "")
+        '''
         
-        self.press = DataWithBar(self.window,Point(975,100),"(atm)",Point(775,90),Point(1175,110),pressMax, "blue")
-        self.dataFields = (self.altData, self.speedData, self.acclData, self.aTempData, self.bTempData, self.cTempData, self.yLabel, self.xLabel, self.velLabel, self.press)
+        #makes a pressure bar graph
+        self.press = DataWithBar(self.window,Point(975,100),"(tor)",
+                                 Point(775,90), Point(1175,110),pressMax, 
+                                 "blue", "Pressure: ", "PRES1")
         
-        # GRAPHS (With 2 graphs, lag begins about 115 seconds in.)
-        self.altGraph = Graph(self.window, self.origin, self.yMax, self.xMax, self.currentAltMax, self.currentTMax, "blue")
-        self.speedGraph = Graph(self.window, Point(75,368), 157, self.xMax, 100, self.currentTMax, "green")
+        self.dataFields = (self.altData, self.speedData, self.acclData, 
+                           self.aTempData, self.bTempData, self.cTempData, 
+                           self.press)  
+        
+        # GRAPH
+        self.altGraph = Graph(self.window, self.origin, self.yMax, self.xMax, 
+                              self.currentAltMax, self.currentTMax, "blue", 
+                              "Time", "Alt", "ACCL1")
+
+
+        
+        #make a bunch of containers
+        self.containers = []
+        #graph container
+        container1 = Container(self.window, Point(5, 150), 600, 445)
+        container1.add(self.altGraph)
+        #temperature container
+        container2 = Container(self.window, Point(610, 155), 580, 190)
+        container2.add(self.aTempData)
+        container2.add(self.bTempData)
+        container2.add(self.cTempData)
+        #pressure and readings container
+        container3 = Container(self.window, Point(610, 5), 580, 140)
+        container3.add(self.press)
+        container3.add(self.acclData)
+        container3.add(self.speedData)
+        #altitude container
+        container4 = Container(self.window, Point(5,5), 600, 140)
+        container4.add(self.altData)
+        
+        
+        self.__register_type_callback(self.altGraph)
+        self.__register_type_callback(self.aTempData)
+        self.__register_type_callback(self.bTempData)
+        self.__register_type_callback(self.cTempData)
+        self.__register_type_callback(self.press)
+        self.__register_type_callback(self.acclData)
+        #Instead register a speed object with reference to speedData
+        #self.__register_type_callback(self.speedData)
+        self.__register_type_callback(Speed(object=self.speedData))
+        self.__register_type_callback(self.altData)
+        
+
+        #add the containers
+        self.containers.append(container1);
+        self.containers.append(container2);
+        self.containers.append(container3);
+        self.containers.append(container4);
         
         #Thread events
         self.running = threading.Event()
         self.paused = threading.Event()
         
-        
-        return
-        
-    def run(self):
-        #debug
-        print "running " + self.name
-        
+    def run(self):        
         #output.write("////////// " + time.asctime(time.localtime(time.time())) + " //////////\n")
         #output.write("Time (min, s) Accl (m/s^2)  y-speed (m/s) altitude (m)  aTemp (*C)    bTemp (*C)    cTemp (*C)    pressure (atm)\n")
         
@@ -93,6 +165,7 @@ class DataWindow(threading.Thread):
         while self.running.isSet():
             timeStart = time.time()
             
+            parser.update()
             # collect data for manipulation (acclY, aTemp, bTemp, cTemp)
             inputData = open(inputFile, "r")
             currentData = []
@@ -102,34 +175,48 @@ class DataWindow(threading.Thread):
                     currentData.append(round(float(data[0:len(data)-1]),1))
                 else:
                     currentData.append("NO")
-            #print(currentData)
-            inputData.close()
-        
+
             # approximate alt
             if currentData[0] != "NO":
                 self.speed += float(currentData[0]) * sampleTime
             self.altitude += self.speed * sampleTime
-        
-            # set data fields
-            self.dataFields[0].set(self.altitude)
-            self.dataFields[1].set(self.speed)
-            self.dataFields[2].set(currentData[0])
-            self.dataFields[3].set(currentData[1])
-            self.dataFields[4].set(currentData[2])
-            self.dataFields[5].set(currentData[3])
-            self.dataFields[6].set(self.altGraph.getAxisValues()[0])
-            self.dataFields[7].set(self.altGraph.getAxisValues()[1])
-            self.dataFields[8].set(self.speedGraph.getAxisValues()[0])
-            self.dataFields[9].set(currentData[4])
-            # graphs: 
-            self.altGraph.addData(self.altitude)
-            self.speedGraph.addData(self.speed)
             
-
-            # record output
-            #recordTime = str(time.localtime(time.time())[4]) + ", " + str(round(time.localtime(time.time())[5] + math.modf(time.time())[0],2))
-            #record(output, 14, (recordTime, currentData[0], round(self.speed, 2), round(self.altitude, 2), currentData[1], currentData[2], currentData[3], currentData[4]))
+            '''
+            @todo: add options for derived measurements
+            '''
             
+            '''
+            #get data from parser and apply it
+            if (parser.is_available()): 
+                for container in self.containers:
+                    for item in container.items:
+                        #look for item type in queue
+                        result = parser.get(item.type)
+                        #apply updated data 
+                        if (result != None):
+                            #feed in the data
+                            item.update(result)
+            '''
+            #get data from parser and apply it
+            if (parser.is_available()): 
+                for key in self.types_to_objects.keys():
+                    data = parser.get(key)
+                    if data != None:
+                        #update all the items linked to this data type
+                        for item in self.types_to_objects[key]:
+                            item.update(data)
+            
+            #update data fields
+            #self.dataFields[0].update(self.altitude) #update alt data
+            #self.dataFields[1].update(self.speed)#update speed data
+            #self.dataFields[2].update(currentData[0])# update accel data
+            #self.dataFields[3].update(currentData[1])# update tempa
+            #self.dataFields[4].update(currentData[2])# update tempb
+            #self.dataFields[5].update(currentData[3])# update tempc
+            #self.dataFields[6].update(self.altGraph.getAxisValues()[0]) #update y axis bounds
+            #self.dataFields[7].update(self.altGraph.getAxisValues()[1]) #update x axis bounds
+            #self.dataFields[8].update(currentData[4]) #update pressure
+            #self.altGraph.update(self.altitude)
             
             # reports if render time is greater than sample time.
             if time.time() - timeStart > sampleTime:
@@ -137,88 +224,150 @@ class DataWindow(threading.Thread):
             while time.time() - timeStart < sampleTime:
                 time.sleep(0.03)
             
-            
+            #pauses runtime
             while self.paused.isSet():
-                time.sleep(0.001)
+                time.sleep(0.03)
             #end of loop
             
+        #close the input stream    
+        inputData.close()    
         print("Exited Thread and Stopped")  
-            
+               
+    def setUp(self): # sets up the static elements of the data display
+        '''
+        Sets up all the containers in this display.
+        '''
+        for container in self.containers:
+            try:
+                container.setUp()
+            except:
+                print ("Illegal Container")
+                
+    def __register_type_callback(self, object):
+        '''
+        @todo: enforce that has type field and update method
+        '''
+        type = object.type
         
-    
-
+        '''
+        @todo: can be reduced to one line i think
+        '''
+        if (self.types_to_objects.has_key(type)):
+            self.types_to_objects[type].append(object)
+        else:
+            self.types_to_objects.update({type:[object]})
+                
 def record(output, spacing, data):
     for d in data:
         output.write(str(d) + (spacing - len(str(d))) * " ")
     output.write("\n")
-    
-def setUp(window): # sets up the static elements of the data display
-        Rectangle(Point(5,5),Point(600,140)).draw(window) # Altidude display box
-        
-        txt = Text(Point(90,75), "Altitude:") # Altitude text
-        txt.setSize(30)
-        txt.draw(window)
-        
-        Rectangle(Point(5,150),Point(600,595)).draw(window) # Altitude graph box
-        
-        Line(Point(75,200),Point(75,525)).draw(window) # graph y axis
-        Line(Point(75,210),Point(65,210)).draw(window)
-        
-        Line(Point(550,525),Point(75,525)).draw(window) # graph t axis
-        Line(Point(540,535),Point(540,525)).draw(window)
-        
-        Text(Point(75,180), "Altitude (m)").draw(window) # graph y label
-        Text(Point(313,570), "Time Since Launch (s)").draw(window) # graph x label
-        
-        Line(Point(75,368),Point(85,368)).draw(window) # velocity tick
-        Line(Point(550,368),Point(540,368)).draw(window)
-        Line(Point(550,200),Point(550,525)).draw(window) # velocity y axis
-        Text(Point(550,180), "Velocity (m/s)").draw(window)
-        Text(Point(560,368), "0").draw(window)
-        Line(Point(540,210),Point(550,210)).draw(window)
-        
-        Rectangle(Point(610,5),Point(1195,145)).draw(window) # other display box
-        txt = Text(Point(680,30), "Speed:") # speed text
-        txt.setSize(15)
-        txt.draw(window)
-        
-        txt = Text(Point(950,30), "Y-accl:") # accl text
-        txt.setSize(15)
-        txt.draw(window)
-        
-        txt = Text(Point(700, 100), "Pressure:") # pressure text
-        txt.setSize(15)
-        txt.draw(window)
-        
-        Rectangle(Point(775,90),Point(1175,110)).draw(window) # pressure bar
-        Rectangle(Point(610,155),Point(1195,350)).draw(window) # temp display box
-        Text(Point(675,200), "PartA Temp:").draw(window)
-        Rectangle(Point(750,190),Point(1150,210)).draw(window)
-        Text(Point(675,250), "PartB Temp:").draw(window)
-        Rectangle(Point(750,240),Point(1150,260)).draw(window)
-        Text(Point(675,300), "PartC Temp:").draw(window)
-        Rectangle(Point(750,290),Point(1150,310)).draw(window)
-        #Rectangle(Point(1100,550),Point(1195,595)).draw(window) # button box
 
+    
+#-------------------------------------------------------------------------------
+#        CLASSES
+#-------------------------------------------------------------------------------
+
+'''
+class DataDistributer:
+    
+    def __init__(self):
+        #map of strings representing type names
+        #to objects with a update method and a type field
+        self.types_to_objects = {}
+        
+    def register_type_callback(self, object):
+       
+        type = object.type
+        if (self.types_to_objects.has_key(type)):
+            self.types_to_objects[type].append(object)
+        else:
+            self.types_to_objects.update({type:[object]})
+        
+    def update_all(self):
+        for key in self.types_to_objects.keys():
+            data = parser.get(key)
+            if data != None:
+                #update all the items linked to this data type
+                for item in self.types_to_objects[key]:
+                    item.update(data)
+'''
+        
+#A class for holding other items, orienting them, and printing them
+class Container:
+    '''
+    Rectangle(Point(self.origin.getX(),self.origin.getY()),
+               Point(self.origin.getX()+self.tLength,self.origin.getY()
+                     +self.yLength)).draw(self.window) # Altitude graph box
+    '''
+    
+    def __init__(self, window, position=Point(0,0), max_length=0, max_height=0):
+        #the Items in this containers
+        self.items = []
+        #the window to draw stuff to
+        self.window = window
+        #The type of data to update
+        self.types = []
+        self.origin = position #top left of where container is drawn
+        self.max_x = max_length #max length 
+        self.max_y = max_height
+    
+    def add(self, component):
+        '''
+        @todo: update container dimensions
+        '''
+        self.items.append(component)
+        
+    def setUp(self):
+        Rectangle(self.origin, Point(self.origin.getX()+self.max_x,
+                                     self.origin.getY()+self.max_y)
+                                    ).draw(self.window)
+        for component in self.items:
+            try:
+                component.setUp()
+            except:
+                print("Illegal Component Detected")
+        
 # A Data field that displays data... 
 class DataField:
     # Parameters: window: the Graphics Window 
     #           location: the Point at the center of the display
-    #               unit: the unit associated wiht the data
-    def __init__(self, window, location, unit):
+    #               unit: the unit associated with the data
+    def __init__(self, window, location, unit, text="Default", text_size=15, 
+                 type="DEF"):
         self.line = Text(location, "READY")
+        self.line.setSize(text_size)
         self.window = window
         self.line.draw(self.window)
         self.unit = unit
-    
+        self.location = location
+        self.text_size =text_size
+        self.text = text
+        self.type = type
+        self.max_len = 0
+        
     # sets and displays new data
-    def set(self, data):
-        if data != "NO":
+    def update(self, data):
+        if data != None:
+            temp = self.line.getText()
+            if (len(temp) > self.max_len):
+                self.max_len = len(temp)
             self.line.setText(str(round(data, 1)) + " " + self.unit)
+            diff = len(self.line.getText()) - self.max_len
+            if diff > 0:
+                self.line._move(diff*self.text_size*0.5, 0)
         else:
             self.line.setText("(No Data)")
         self.line.undraw()
         self.line.draw(self.window)
+    
+    #         window, x_start=0, y_start=0, name="default", size=15    
+    def setUp(self):
+        txt = Text(Point(self.location.getX() - len(self.text) * 
+                         self.text_size * 0.6, self.location.getY()), 
+                         self.text) # Altitude text
+        
+        txt.setSize(self.text_size)
+        txt.draw(self.window)
 
 # displays data with a "temperature bar" that fills left to right based on value. 
 class DataWithBar:
@@ -229,7 +378,8 @@ class DataWithBar:
     #            corner2: the lower right corner of the "temperature bar"
     #            maximum: the value at which the bar is completely filled
     #              color: the color of the bar
-    def __init__(self, window, txtLocation, unit, corner1, corner2, maximum, color):
+    def __init__(self, window, txtLocation, unit, corner1, corner2, 
+                 maximum, color, text="Default", type="DEF"):
         self.line = Text(txtLocation, "READY")
         self.line.draw(window)
         self.window = window
@@ -240,8 +390,11 @@ class DataWithBar:
         self.max = maximum
         self.color = color
         self.box = Rectangle(Point(0,0),Point(0,0))
+        self.corner2 = corner2
+        self.label = text
+        self.type = type
 
-    def set(self, data):
+    def update(self, data):
         self.box.undraw()
         if data == "NO":
             self.line.setText("(No Data)")
@@ -249,13 +402,22 @@ class DataWithBar:
             self.line.setText(str(float(data)) + " " + self.unit)
             if float(data) > self.max:
                 data = self.max
-            self.box = Rectangle(self.upperLeft,Point(float(data) / self.max * (self.right - self.upperLeft.getX()) + self.upperLeft.getX(),self.bottom))
+            self.box = Rectangle(self.upperLeft,Point(float(data) / self.max * 
+                                (self.right - self.upperLeft.getX()) +
+                                 self.upperLeft.getX(),self.bottom))
         self.box.setFill(self.color)
         self.box.draw(self.window)
         self.line.undraw()
         self.line.draw(self.window)
     
-# Creates a 2-quadrant graph at specified location with vertical and horizontal
+
+    #        window, name, name_x, name_y, bar_x, bar_y, length_x, length_y    
+    def setUp(self):
+        Text(Point(self.upperLeft.getX() + 10, self.upperLeft.getY()), 
+             self.label).draw(self.window)
+        Rectangle(self.upperLeft, self.corner2).draw(self.window)
+    
+# Creates a 1-quadrant graph at specified location with vertical and horizontal
 #     length. New data can be added and will be plotted with respect to time. 
 #     Plots data at time when method called.
 class Graph:
@@ -265,27 +427,42 @@ class Graph:
     #            tLength: the pixel length of the T-axis.
     #           initYmax: the initial data value for the maximum of the Y-axis.
     #           initTmax: the initial data value for the maximum of the T-axis.
-    def __init__(self, window, origin, yLength, tLength, initYMax, initTMax, color):
+
+    #            x_label: label for the bottom axis
+    #            y_label: label for the top axis
+    def __init__(self, window, origin, yLength, tLength, initYMax, 
+                 initTMax, color, x_label, y_label, type="DEF"):
+        self.window = window # window reference
+        self.origin = origin #origin of y axis
+        self.yLength = yLength #y axis height
+        self.tLength = tLength  # x- axis width
         self.graphicsFactor = 4.8 # the higher, the sooner the lines stop rendering. 5 causes no initial lag
-        self.window = window
-        self.origin = origin
-        self.yLength = yLength
-        self.tLength = tLength
         self.currentYMax = initYMax
         self.currentTMax = initTMax
         self.color = color # color of the lines and points
         self.points = [] # the data recorded and scaled
         self.displayPoints = [] # the data to be displayed
         self.displayLines = [] # the connecting lines
-        self.oldTime = 0 # tracks last 
-    
-    # adds a data point and redraws graph if necessary
-    def addData(self, data): # takes a data point and redraws the graph
+        self.oldTime = 0 # tracks last time reading
+        self.x_label = x_label
+        self.y_label = y_label
+        self.type = type
+        self.nib_const = 0.9
+        self.x_bounds = Text(Point(origin.getX()+self.tLength*self.nib_const+35,
+                                   origin.getY()+15), "READY") #displays the x bounds
+        self.y_bounds = Text(Point(origin.getX()-30, 
+                                   origin.getY()-self.yLength*self.nib_const-20), 
+                                   "READY") #displays the y bounds
+        
+
+    # adds a data point and redraws graph
+    def update(self, data): # takes a data point and redraws the graph
         if len(self.points) == 0:
             self.points.append(Point(0, data * self.yLength / self.currentYMax))
             self.oldTime = time.time()
         else: 
-            self.points.append(Point(self.points[-1].getX() + self.tLength * (time.time() - self.oldTime) / self.currentTMax, data * self.yLength / self.currentYMax))
+            self.points.append(Point(self.points[-1].getX() + self.tLength * (time.time() - self.oldTime) / self.currentTMax, 
+                                     data * self.yLength / self.currentYMax))
             self.oldTime = time.time()
         doRedraw = 0
         while(data > self.currentYMax or data < - self.currentYMax):
@@ -312,13 +489,26 @@ class Graph:
                 l.setFill(self.color)
                 l.draw(self.window)
                 self.displayLines.append(l)
+                oldP = p
+        
+        '''
+        @todo: make update only work if values need it.
+        @todo: implement resizing
+        '''
+        new_bounds = self.getAxisValues()
+        self.x_bounds.setText(new_bounds[1])
+        self.y_bounds.setText(new_bounds[0])
+        self.x_bounds.undraw()
+        self.x_bounds.draw(self.window)
+        self.y_bounds.undraw()
+        self.y_bounds.draw(self.window)
             
-    
     # Returns the maximum y and t axis values for labeling purposes  
     def getAxisValues(self):
-        return [self.currentYMax, self.currentTMax]
+        return (self.currentYMax, self.currentTMax)
     
-    # Helps addData method.
+
+    # Helps update method.
     def redraw(self):
         for p in self.displayPoints:
             p.undraw()
@@ -340,6 +530,66 @@ class Graph:
                 self.displayLines.append(l)
                 oldP = p
         #print("REDREW!")
+        
+    '''
+    @todo: turn calls into a variable assignment
+    '''
+    def setUp(self):
+        #Buffer which seeks to select the best buffer appropriate for the dimensions
+        #based on the dimensions of the smaller of the two dimensions
+        #axis_buffer = max(70, min(self.tLength, self.yLength) * 0.05)
+        
+        
+        #magic buffer for the line is fifty
+        Line(Point(self.origin.getX(),self.origin.getY()),
+             Point(self.origin.getX(),self.origin.getY()-self.yLength)
+             ).draw(self.window) # graph y axis
+             
+        #10 is the length for now. Make scalable?
+        Line(Point(self.origin.getX()-10, 
+                   self.origin.getY() - self.yLength * self.nib_const),
+             Point(self.origin.getX(),self.origin.getY() - self.yLength * 
+                   self.nib_const)).draw(self.window) #lil nub thingie
+             
+        Line(Point(self.origin.getX(), self.origin.getY()),
+             Point(self.origin.getX()+self.tLength, self.origin.getY())
+             ).draw(self.window) # graph x axis
+             
+        Line(Point(self.origin.getX()+self.tLength * self.nib_const,
+                   self.origin.getY()+10),
+             Point(self.origin.getX()+self.tLength * self.nib_const,
+                   self.origin.getY())
+             ).draw(self.window)
+        
+        Text(Point(self.origin.getX() + self.tLength * 0.5,self.origin.getY() 
+                   + 10), self.x_label).draw(self.window) # graph x label
+        
+        Text(Point(self.origin.getX(), self.origin.getY()-self.yLength-10), 
+             self.y_label).draw(self.window) # graph y label
+             
+        self.x_bounds.draw(self.window)
+        self.y_bounds.draw(self.window)
+        
+
+class Speed:
+    def __init__(self, object, type="ACCL1"):
+        self.type = type
+        self.callback_ref = object
+        self.speed = 0.0
+        
+    def update(self, data):
+        '''
+        if currentData[0] != "NO":
+                self.speed += float(currentData[0]) * sampleTime
+                '''
+        self.speed += float(data) * sampleTime
+        self.callback_ref.update(self.speed)
+        
+# record output
+#recordTime = str(time.localtime(time.time())[4]) + ", " + str(round(time.localtime(time.time())[5] + math.modf(time.time())[0],2))
+#record(output, 14, (recordTime, currentData[0], round(self.speed, 2), round(self.altitude, 2), currentData[1], currentData[2], currentData[3], currentData[4]))
+ '''
+
     
     
 
@@ -410,3 +660,5 @@ def convert(points, origin):
                     l.draw(window)
                     self.displayLines.append(l)
                     oldP = p"""
+                    
+           '''
