@@ -170,9 +170,9 @@ class Application(tk.Frame):
 			
 	def setUpWindow(self, name):
 		#Set up window and display
+
 		newWin = gw.GraphWin("Data",1200,600, master=self)
 		newWin.grid(row=2, column=0, columnspan=20, rowspan=5)
-		
 
 		#set as active window and add to window dictionary
 		self.activeWindow = newWin

@@ -110,6 +110,8 @@ class DataWindow(threading.Thread):
         self.altGraph = Graph(self.window, self.origin, self.yMax, self.xMax, 
                               self.currentAltMax, self.currentTMax, "blue", 
                               "Time", "Alt", "ACCL1")
+
+
         
         #make a bunch of containers
         self.containers = []
@@ -142,6 +144,7 @@ class DataWindow(threading.Thread):
         self.__register_type_callback(Speed(object=self.speedData))
         self.__register_type_callback(self.altData)
         
+
         #add the containers
         self.containers.append(container1);
         self.containers.append(container2);
@@ -177,7 +180,6 @@ class DataWindow(threading.Thread):
             if currentData[0] != "NO":
                 self.speed += float(currentData[0]) * sampleTime
             self.altitude += self.speed * sampleTime
-            
             
             '''
             @todo: add options for derived measurements
@@ -276,8 +278,6 @@ class DataDistributer:
     def register_type_callback(self, object):
        
         type = object.type
-        
-
         if (self.types_to_objects.has_key(type)):
             self.types_to_objects[type].append(object)
         else:
@@ -369,7 +369,7 @@ class DataField:
         txt.setSize(self.text_size)
         txt.draw(self.window)
 
-# displays data wiht a "temperature bar" that fills left to right based on value. 
+# displays data with a "temperature bar" that fills left to right based on value. 
 class DataWithBar:
     # Parameters: window: the Graphics Window
     #        txtLocation: the middle of the location of the data readout
@@ -410,6 +410,7 @@ class DataWithBar:
         self.line.undraw()
         self.line.draw(self.window)
     
+
     #        window, name, name_x, name_y, bar_x, bar_y, length_x, length_y    
     def setUp(self):
         Text(Point(self.upperLeft.getX() + 10, self.upperLeft.getY()), 
@@ -426,6 +427,7 @@ class Graph:
     #            tLength: the pixel length of the T-axis.
     #           initYmax: the initial data value for the maximum of the Y-axis.
     #           initTmax: the initial data value for the maximum of the T-axis.
+
     #            x_label: label for the bottom axis
     #            y_label: label for the top axis
     def __init__(self, window, origin, yLength, tLength, initYMax, 
@@ -434,11 +436,12 @@ class Graph:
         self.origin = origin #origin of y axis
         self.yLength = yLength #y axis height
         self.tLength = tLength  # x- axis width
+        self.graphicsFactor = 4.8 # the higher, the sooner the lines stop rendering. 5 causes no initial lag
         self.currentYMax = initYMax
         self.currentTMax = initTMax
         self.color = color # color of the lines and points
         self.points = [] # the data recorded and scaled
-        self.displayPoints = [] # the data displayed
+        self.displayPoints = [] # the data to be displayed
         self.displayLines = [] # the connecting lines
         self.oldTime = 0 # tracks last time reading
         self.x_label = x_label
@@ -451,7 +454,7 @@ class Graph:
                                    origin.getY()-self.yLength*self.nib_const-20), 
                                    "READY") #displays the y bounds
         
-    
+
     # adds a data point and redraws graph
     def update(self, data): # takes a data point and redraws the graph
         if len(self.points) == 0:
@@ -461,26 +464,28 @@ class Graph:
             self.points.append(Point(self.points[-1].getX() + self.tLength * (time.time() - self.oldTime) / self.currentTMax, 
                                      data * self.yLength / self.currentYMax))
             self.oldTime = time.time()
-        while(data > self.currentYMax):
+        doRedraw = 0
+        while(data > self.currentYMax or data < - self.currentYMax):
+            doRedraw = 1
             oldMax = self.currentYMax
             self.currentYMax  = self.currentYMax * 1.5 # extends y-axis  by 1.5 each time max data is reached (change later?)
             for i in range(0,len(self.points)):
                 self.points[i] = Point(self.points[i].getX(), self.points[i].getY() * oldMax / self.currentYMax)
         while self.points[-1].getX() > self.tLength:
+            doRedraw = 1
             oldMax = self.currentTMax
             self.currentTMax += 10 # extends t-axis 10 seconds each time the max time is reached (change later?)
             for i in range(0,len(self.points)):
                 self.points[i] = Point(self.points[i].getX() * oldMax / self.currentTMax, self.points[i].getY())
-        for p in self.displayPoints:
-            p.undraw()
-        for l in self.displayLines:
-            l.undraw()
-        self.convert()
-        oldP = self.origin
-        for p in self.displayPoints:
+        if doRedraw:
+            self.redraw() # redraws all points and lines
+        else: # draw new point only
+            p = Point(self.origin.getX() + self.points[-1].getX(),self.origin.getY() - self.points[-1].getY())
+            p.setFill(self.color)
+            self.displayPoints.append(p)
             p.draw(self.window)
-            if len(self.displayPoints) < self.tLength:
-                l = Line(p,oldP)
+            if len(self.displayPoints) > 1 and len(self.displayPoints) < self.tLength / self.graphicsFactor:
+                l = Line(p,self.displayPoints[-2])
                 l.setFill(self.color)
                 l.draw(self.window)
                 self.displayLines.append(l)
@@ -502,14 +507,29 @@ class Graph:
     def getAxisValues(self):
         return (self.currentYMax, self.currentTMax)
     
+
     # Helps update method.
-    def convert(self):
+    def redraw(self):
+        for p in self.displayPoints:
+            p.undraw()
+        for l in self.displayLines:
+            l.undraw()
         newPoints = []
         for i in range(0,len(self.points)):
             p = Point(self.origin.getX() + self.points[i].getX(),self.origin.getY() - self.points[i].getY())
             p.setFill(self.color)
             newPoints.append(p)
         self.displayPoints =  newPoints
+        oldP = self.origin
+        for p in self.displayPoints:
+            p.draw(self.window)
+            if len(self.displayPoints) < self.tLength / self.graphicsFactor:
+                l = Line(p,oldP)
+                l.setFill(self.color)
+                l.draw(self.window)
+                self.displayLines.append(l)
+                oldP = p
+        #print("REDREW!")
         
     '''
     @todo: turn calls into a variable assignment
@@ -549,6 +569,7 @@ class Graph:
              
         self.x_bounds.draw(self.window)
         self.y_bounds.draw(self.window)
+        
 
 class Speed:
     def __init__(self, object, type="ACCL1"):
@@ -567,4 +588,77 @@ class Speed:
 # record output
 #recordTime = str(time.localtime(time.time())[4]) + ", " + str(round(time.localtime(time.time())[5] + math.modf(time.time())[0],2))
 #record(output, 14, (recordTime, currentData[0], round(self.speed, 2), round(self.altitude, 2), currentData[1], currentData[2], currentData[3], currentData[4]))
-            
+ '''
+
+    
+    
+
+"""def addData(self, data): # takes a data point and redraws the graph
+        if len(self.points) == 0:
+            self.points.append(Point(0, data * self.yLength / self.currentYMax))
+            self.oldTime = time.time()
+        else: 
+            self.points.append(Point(self.points[-1].getX() + self.tLength * (time.time() - self.oldTime) / self.currentTMax, data * self.yLength / self.currentYMax))
+            self.oldTime = time.time()
+        while(data > self.currentYMax):
+            oldMax = self.currentYMax
+            self.currentYMax  = self.currentYMax * 1.5 # extends y-axis  by 1.5 each time max data is reached (change later?)
+            for i in range(0,len(self.points)):
+                self.points[i] = Point(self.points[i].getX(), self.points[i].getY() * oldMax / self.currentYMax)
+        while self.points[-1].getX() > self.tLength:
+            oldMax = self.currentTMax
+            self.currentTMax += 10 # extends t-axis 10 seconds each time the max time is reached (change later?)
+            for i in range(0,len(self.points)):
+                self.points[i] = Point(self.points[i].getX() * oldMax / self.currentTMax, self.points[i].getY())
+        for p in self.displayPoints:
+            p.undraw()
+        for l in self.displayLines:
+            l.undraw()
+        self.convert()
+        oldP = self.origin
+        for p in self.displayPoints:
+            p.draw(self.window)
+            if len(self.displayPoints) < self.tLength:
+                l = Line(p,oldP)
+                l.setFill(self.color)
+                l.draw(self.window)
+                self.displayLines.append(l)
+                oldP = p
+
+
+def convert(points, origin):
+    newPoints = [origin,]
+    for i in range(0,len(points)):
+        p = Point(origin.getX() + points[i].getX(),origin.getY() - points[i].getY())
+        p.setFill("blue")
+        newPoints.append(p)
+    return newPoints
+    
+    (OLD GRAPH)
+    self.points.append(Point(self.points[-1].getX() + self.xMax * sampleTime / self.currentTMax, self.altitude * self.yMax / self.currentAltMax))
+            while self.altitude > self.currentAltMax:
+                oldMax = self.currentAltMax
+                self.currentAltMax  = self.currentAltMax * 1.5
+                for i in range(0,len(self.points)):
+                    self.points[i] = Point(self.points[i].getX(), self.points[i].getY() * oldMax / self.currentAltMax)
+            while self.points[-1].getX() > self.xMax:
+                oldMax = self.currentTMax
+                self.currentTMax += 10
+                for i in range(0,len(self.points)):
+                    self.points[i] = Point(self.points[i].getX() * oldMax / self.currentTMax, self.points[i].getY())
+            for p in self.displayPoints:
+                p.undraw()
+            for l in self.displayLines:
+                l.undraw()
+            self.displayPoints = convert(self.points, self.origin)
+            oldP = self.origin
+            for p in self.displayPoints:
+                p.draw(window)
+                if len(self.displayPoints) < self.xMax:
+                    l = Line(p,oldP)
+                    l.setFill("Blue")
+                    l.draw(window)
+                    self.displayLines.append(l)
+                    oldP = p"""
+                    
+           '''
