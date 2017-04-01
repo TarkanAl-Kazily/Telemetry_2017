@@ -24,7 +24,7 @@ bTempMax = 50
 cTempMax = 500
 pressMax = 1000
 sampleTime = 0.5 # time between samples in seconds
-portName = "COM4"
+portName = "COM5"
 #Container box buffer
 buffer = 5
 
@@ -77,20 +77,20 @@ class DataWindow(threading.Thread):
         self.speedData = DataField(self.window, Point(780,30), "(m/s)",
                                    "Speed: ",15,"ACCL1")
         self.acclData = DataField(self.window, Point(1050,30), "(m/s^2)",
-                                  "Y-Accel: ",15,"ACCL1")
+                                  "Y-Accel: ",15,"ACL1")
         
         #init temperature objects
         self.aTempData = DataWithBar(self.window, Point(950,200), 
                                      "*C",Point(750,190),Point(1150,210), 
-                                     aTempMax, "green", "Temp A: ", "TEMP1")
+                                     aTempMax, "green", "Temp A: ", "TEM1")
         
         self.bTempData = DataWithBar(self.window, Point(950,250), 
                                      "*C",Point(750,240),Point(1150,260), 
-                                     bTempMax, "red", "Temp B: ", "TEMP2")
+                                     bTempMax, "red", "Temp B: ", "TEM2")
         
         self.cTempData = DataWithBar(self.window, Point(950,300), 
                                      "*C",Point(750,290),Point(1150,310), 
-                                     cTempMax, "pink", "Temp C: ","TEMP3")
+                                     cTempMax, "pink", "Temp C: ","TEM3")
         
         '''
         self.yLabel = DataField(self.window, Point(40,225), "")
@@ -100,7 +100,7 @@ class DataWindow(threading.Thread):
         #makes a pressure bar graph
         self.press = DataWithBar(self.window,Point(975,100),"(tor)",
                                  Point(775,90), Point(1175,110),pressMax, 
-                                 "blue", "Pressure: ", "PRES1")
+                                 "blue", "Pressure: ", "PRE1")
         
         self.dataFields = (self.altData, self.speedData, self.acclData, 
                            self.aTempData, self.bTempData, self.cTempData, 
@@ -109,7 +109,7 @@ class DataWindow(threading.Thread):
         # GRAPH
         self.altGraph = Graph(self.window, self.origin, self.yMax, self.xMax, 
                               self.currentAltMax, self.currentTMax, "blue", 
-                              "Time", "Alt", "ACCL1")
+                              "Time", "Alt", "ACL1")
 
 
         
