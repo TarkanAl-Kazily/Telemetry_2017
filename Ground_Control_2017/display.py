@@ -3,6 +3,7 @@ import time
 import math
 import threading
 import utility as util
+from sqlite3.test import types
 
 # Do I need this???
 GraphWin = gw.GraphWin
@@ -56,7 +57,7 @@ class DataWindow(threading.Thread):
         
         
         #Grab Args
-        self.args=args
+        #self.args=args
         self.kwargs=kwargs
         self.name = name
         
@@ -64,18 +65,25 @@ class DataWindow(threading.Thread):
         self.window = kwargs['window']
         self.types_to_objects = {}
         
-        
-        # initialize data fields
+        #Old, unneccessary initializations
         '''
         self.altData = DataField(self.window, Point(350,75), "(m)", 
                                  "Altitude: ", 32, "ALTI1")
         self.speedData = DataField(self.window, Point(780,30), "(m/s)",
                                    "Speed: ",15,"SPED1")
+        self.yLabel = DataField(self.window, Point(40,225), "")
+        self.xLabel = DataField(self.window, Point(540,545), "")
+        
+        self.dataFields = (self.altData, self.speedData, self.acclData, 
+                   self.aTempData, self.bTempData, self.cTempData, 
+                   self.press)  
         '''
+        
+        # initialize data fields
         self.altData = DataField(self.window, Point(350,75), "(m)", 
-                                 "Altitude: ", 32, "ACCL1")
+                                 "Altitude: ", 32, "ACL1")
         self.speedData = DataField(self.window, Point(780,30), "(m/s)",
-                                   "Speed: ",15,"ACCL1")
+                                   "Speed: ",15,"ACL1")
         self.acclData = DataField(self.window, Point(1050,30), "(m/s^2)",
                                   "Y-Accel: ",15,"ACL1")
         
@@ -92,21 +100,14 @@ class DataWindow(threading.Thread):
                                      "*C",Point(750,290),Point(1150,310), 
                                      cTempMax, "pink", "Temp C: ","TEM3")
         
-        '''
-        self.yLabel = DataField(self.window, Point(40,225), "")
-        self.xLabel = DataField(self.window, Point(540,545), "")
-        '''
-        
         #makes a pressure bar graph
         self.press = DataWithBar(self.window,Point(975,100),"(tor)",
                                  Point(775,90), Point(1175,110),pressMax, 
                                  "blue", "Pressure: ", "PRE1")
         
-        self.dataFields = (self.altData, self.speedData, self.acclData, 
-                           self.aTempData, self.bTempData, self.cTempData, 
-                           self.press)  
+
         
-        # GRAPH
+        # Make the altitude graph (which is actually acceleration rn)
         self.altGraph = Graph(self.window, self.origin, self.yMax, self.xMax, 
                               self.currentAltMax, self.currentTMax, "blue", 
                               "Time", "Alt", "ACL1")
@@ -141,7 +142,8 @@ class DataWindow(threading.Thread):
         self.__register_type_callback(self.acclData)
         #Instead register a speed object with reference to speedData
         #self.__register_type_callback(self.speedData)
-        self.__register_type_callback(Speed(object=self.speedData))
+        self.__register_type_callback(Speed(object=self.speedData, 
+                                            type=self.speedData.type))
         self.__register_type_callback(self.altData)
         
 
@@ -181,10 +183,9 @@ class DataWindow(threading.Thread):
                 self.speed += float(currentData[0]) * sampleTime
             self.altitude += self.speed * sampleTime
             
-            '''
-            @todo: add options for derived measurements
-            '''
-            
+            #OLD version of updating function.
+            #unfortunately, very order dependant and 
+            #would empty queue before other items could get it
             '''
             #get data from parser and apply it
             if (parser.is_available()): 
@@ -199,6 +200,8 @@ class DataWindow(threading.Thread):
             '''
             #get data from parser and apply it
             if (parser.is_available()): 
+                #for each available data type, check to 
+                #see if new data came in
                 for key in self.types_to_objects.keys():
                     data = parser.get(key)
                     if data != None:
@@ -245,7 +248,7 @@ class DataWindow(threading.Thread):
                 
     def __register_type_callback(self, object):
         '''
-        @todo: enforce that has type field and update method
+        @todo: enforce that object has type field and update method
         '''
         type = object.type
         
@@ -267,6 +270,8 @@ def record(output, spacing, data):
 #        CLASSES
 #-------------------------------------------------------------------------------
 
+#This class was integrated into The display object to 
+#reduce number of objects and avoid too many dependancies 
 '''
 class DataDistributer:
     
@@ -293,23 +298,19 @@ class DataDistributer:
 '''
         
 #A class for holding other items, orienting them, and printing them
-class Container:
-    '''
-    Rectangle(Point(self.origin.getX(),self.origin.getY()),
-               Point(self.origin.getX()+self.tLength,self.origin.getY()
-                     +self.yLength)).draw(self.window) # Altitude graph box
-    '''
-    
+#Used for eventual automatic display of elements on the screen which
+#organizes items in boxes on the screen.
+#CAN ALSO BE USED FOR DTECTING WHEN A GROUP OF ITEMS ARE SELECTED
+class Container:    
     def __init__(self, window, position=Point(0,0), max_length=0, max_height=0):
         #the Items in this containers
         self.items = []
         #the window to draw stuff to
         self.window = window
-        #The type of data to update
-        self.types = []
+        self.types = [] #The type of data to update
         self.origin = position #top left of where container is drawn
         self.max_x = max_length #max length 
-        self.max_y = max_height
+        self.max_y = max_height #max height
     
     def add(self, component):
         '''
@@ -332,18 +333,18 @@ class DataField:
     # Parameters: window: the Graphics Window 
     #           location: the Point at the center of the display
     #               unit: the unit associated with the data
-    def __init__(self, window, location, unit, text="Default", text_size=15, 
+    def __init__(self, window, location, unit, text="Default", text_size=15,
                  type="DEF"):
-        self.line = Text(location, "READY")
-        self.line.setSize(text_size)
-        self.window = window
-        self.line.draw(self.window)
+        self.line = Text(location, "READY") #initialize text field
+        self.line.setSize(text_size) #intialize text size
+        self.window = window #keeps a window reference
+        self.line.draw(self.window) #draws inital
         self.unit = unit
-        self.location = location
-        self.text_size =text_size
-        self.text = text
-        self.type = type
-        self.max_len = 0
+        self.location = location #Location of the field on the screen
+        self.text_size = text_size # size of the text
+        self.text = text #Label
+        self.type = type #keeps track of type 
+        self.max_len = 0 #max length to be used 
         
     # sets and displays new data
     def update(self, data):
@@ -572,7 +573,7 @@ class Graph:
         
 
 class Speed:
-    def __init__(self, object, type="ACCL1"):
+    def __init__(self, object, type="ACL1"):
         self.type = type
         self.callback_ref = object
         self.speed = 0.0
