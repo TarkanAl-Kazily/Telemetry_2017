@@ -1,10 +1,12 @@
 #include <Regexp.h>
 // Regexp docs: http://www.gammon.com.au/forum/?id=11063
 
+
+// WORKS!
 void setup() {
 
     Serial.begin(9600);
-    //Serial1.begin(9600);
+    Serial1.begin(9600);
     Serial.println("Hello World");
     boolean result = formatted("!ABC4:123456789;");
     if (result) {
@@ -15,7 +17,7 @@ void setup() {
 }
 
 void loop() {
-    
+  /*   
     String typed_data;
   // put your main code here, to run repeatedly:
 
@@ -30,15 +32,15 @@ void loop() {
       typed_data = "";
   }
   
-    /*
+    
   if (typed_data != "") {
       Serial1.println(typed_data);
-  }
+  }*/
 
   if (Serial1.available()) {
       Serial.println(Serial1.readStringUntil('\n'));
   }
-  */
+  
 }
 
 /*
