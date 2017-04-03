@@ -216,8 +216,10 @@ class DataWindow(threading.Thread):
             #self.dataFields[3].update(currentData[1])# update tempa
             #self.dataFields[4].update(currentData[2])# update tempb
             #self.dataFields[5].update(currentData[3])# update tempc
-            #self.dataFields[6].update(self.altGraph.getAxisValues()[0]) #update y axis bounds
-            #self.dataFields[7].update(self.altGraph.getAxisValues()[1]) #update x axis bounds
+             #update y axis bounds
+            #self.dataFields[6].update(self.altGraph.getAxisValues()[0])
+             #update x axis bounds
+            #self.dataFields[7].update(self.altGraph.getAxisValues()[1])
             #self.dataFields[8].update(currentData[4]) #update pressure
             #self.altGraph.update(self.altitude)
             
