@@ -167,37 +167,9 @@ class DataWindow(threading.Thread):
         while self.running.isSet():
             timeStart = time.time()
             
+            #updates new data points
             parser.update()
-            # collect data for manipulation (acclY, aTemp, bTemp, cTemp)
-            inputData = open(inputFile, "r")
-            currentData = []
-            for i in range(0,5):
-                data = inputData.readline()
-                if data[0:len(data)-1]:
-                    currentData.append(round(float(data[0:len(data)-1]),1))
-                else:
-                    currentData.append("NO")
-
-            # approximate alt
-            if currentData[0] != "NO":
-                self.speed += float(currentData[0]) * sampleTime
-            self.altitude += self.speed * sampleTime
             
-            #OLD version of updating function.
-            #unfortunately, very order dependant and 
-            #would empty queue before other items could get it
-            '''
-            #get data from parser and apply it
-            if (parser.is_available()): 
-                for container in self.containers:
-                    for item in container.items:
-                        #look for item type in queue
-                        result = parser.get(item.type)
-                        #apply updated data 
-                        if (result != None):
-                            #feed in the data
-                            item.update(result)
-            '''
             #get data from parser and apply it
             if (parser.is_available()): 
                 #for each available data type, check to 
@@ -208,20 +180,6 @@ class DataWindow(threading.Thread):
                         #update all the items linked to this data type
                         for item in self.types_to_objects[key]:
                             item.update(data)
-            
-            #update data fields
-            #self.dataFields[0].update(self.altitude) #update alt data
-            #self.dataFields[1].update(self.speed)#update speed data
-            #self.dataFields[2].update(currentData[0])# update accel data
-            #self.dataFields[3].update(currentData[1])# update tempa
-            #self.dataFields[4].update(currentData[2])# update tempb
-            #self.dataFields[5].update(currentData[3])# update tempc
-             #update y axis bounds
-            #self.dataFields[6].update(self.altGraph.getAxisValues()[0])
-             #update x axis bounds
-            #self.dataFields[7].update(self.altGraph.getAxisValues()[1])
-            #self.dataFields[8].update(currentData[4]) #update pressure
-            #self.altGraph.update(self.altitude)
             
             # reports if render time is greater than sample time.
             if time.time() - timeStart > sampleTime:
@@ -235,7 +193,7 @@ class DataWindow(threading.Thread):
             #end of loop
             
         #close the input stream    
-        inputData.close()    
+        #inputData.close()    
         print("Exited Thread and Stopped")  
                
     def setUp(self): # sets up the static elements of the data display
@@ -271,33 +229,6 @@ def record(output, spacing, data):
 #-------------------------------------------------------------------------------
 #        CLASSES
 #-------------------------------------------------------------------------------
-
-#This class was integrated into The display object to 
-#reduce number of objects and avoid too many dependancies 
-'''
-class DataDistributer:
-    
-    def __init__(self):
-        #map of strings representing type names
-        #to objects with a update method and a type field
-        self.types_to_objects = {}
-        
-    def register_type_callback(self, object):
-       
-        type = object.type
-        if (self.types_to_objects.has_key(type)):
-            self.types_to_objects[type].append(object)
-        else:
-            self.types_to_objects.update({type:[object]})
-        
-    def update_all(self):
-        for key in self.types_to_objects.keys():
-            data = parser.get(key)
-            if data != None:
-                #update all the items linked to this data type
-                for item in self.types_to_objects[key]:
-                    item.update(data)
-'''
         
 #A class for holding other items, orienting them, and printing them
 #Used for eventual automatic display of elements on the screen which
@@ -591,75 +522,3 @@ class Speed:
 # record output
 #recordTime = str(time.localtime(time.time())[4]) + ", " + str(round(time.localtime(time.time())[5] + math.modf(time.time())[0],2))
 #record(output, 14, (recordTime, currentData[0], round(self.speed, 2), round(self.altitude, 2), currentData[1], currentData[2], currentData[3], currentData[4]))
-
-    
-    
-
-"""def addData(self, data): # takes a data point and redraws the graph
-        if len(self.points) == 0:
-            self.points.append(Point(0, data * self.yLength / self.currentYMax))
-            self.oldTime = time.time()
-        else: 
-            self.points.append(Point(self.points[-1].getX() + self.tLength * (time.time() - self.oldTime) / self.currentTMax, data * self.yLength / self.currentYMax))
-            self.oldTime = time.time()
-        while(data > self.currentYMax):
-            oldMax = self.currentYMax
-            self.currentYMax  = self.currentYMax * 1.5 # extends y-axis  by 1.5 each time max data is reached (change later?)
-            for i in range(0,len(self.points)):
-                self.points[i] = Point(self.points[i].getX(), self.points[i].getY() * oldMax / self.currentYMax)
-        while self.points[-1].getX() > self.tLength:
-            oldMax = self.currentTMax
-            self.currentTMax += 10 # extends t-axis 10 seconds each time the max time is reached (change later?)
-            for i in range(0,len(self.points)):
-                self.points[i] = Point(self.points[i].getX() * oldMax / self.currentTMax, self.points[i].getY())
-        for p in self.displayPoints:
-            p.undraw()
-        for l in self.displayLines:
-            l.undraw()
-        self.convert()
-        oldP = self.origin
-        for p in self.displayPoints:
-            p.draw(self.window)
-            if len(self.displayPoints) < self.tLength:
-                l = Line(p,oldP)
-                l.setFill(self.color)
-                l.draw(self.window)
-                self.displayLines.append(l)
-                oldP = p
-
-
-def convert(points, origin):
-    newPoints = [origin,]
-    for i in range(0,len(points)):
-        p = Point(origin.getX() + points[i].getX(),origin.getY() - points[i].getY())
-        p.setFill("blue")
-        newPoints.append(p)
-    return newPoints
-    
-    (OLD GRAPH)
-    self.points.append(Point(self.points[-1].getX() + self.xMax * sampleTime / self.currentTMax, self.altitude * self.yMax / self.currentAltMax))
-            while self.altitude > self.currentAltMax:
-                oldMax = self.currentAltMax
-                self.currentAltMax  = self.currentAltMax * 1.5
-                for i in range(0,len(self.points)):
-                    self.points[i] = Point(self.points[i].getX(), self.points[i].getY() * oldMax / self.currentAltMax)
-            while self.points[-1].getX() > self.xMax:
-                oldMax = self.currentTMax
-                self.currentTMax += 10
-                for i in range(0,len(self.points)):
-                    self.points[i] = Point(self.points[i].getX() * oldMax / self.currentTMax, self.points[i].getY())
-            for p in self.displayPoints:
-                p.undraw()
-            for l in self.displayLines:
-                l.undraw()
-            self.displayPoints = convert(self.points, self.origin)
-            oldP = self.origin
-            for p in self.displayPoints:
-                p.draw(window)
-                if len(self.displayPoints) < self.xMax:
-                    l = Line(p,oldP)
-                    l.setFill("Blue")
-                    l.draw(window)
-                    self.displayLines.append(l)
-                    oldP = p"""
-                    
