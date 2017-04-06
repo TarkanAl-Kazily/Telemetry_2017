@@ -26,6 +26,7 @@ cTempMax = 500
 pressMax = 1000
 sampleTime = 0.5 # time between samples in seconds
 portName = "COM5"
+location = [0.0,0.0] # GPS location of device
 #Container box buffer
 buffer = 5
 
@@ -103,7 +104,7 @@ class DataWindow(threading.Thread):
         #makes a pressure bar graph
         self.press = DataWithBar(self.window,Point(975,100),"(tor)",
                                  Point(775,90), Point(1175,110),pressMax, 
-                                 "blue", "Pressure: ", "PRE1")
+                                 "blue", "Pressure: ", "PRE1", 1)
         
 
         
@@ -190,6 +191,9 @@ class DataWindow(threading.Thread):
             #pauses runtime
             while self.paused.isSet():
                 time.sleep(0.03)
+            
+            # updates GPS location of device and saves it as "location"
+            
             #end of loop
             
         #close the input stream    
@@ -312,21 +316,23 @@ class DataWithBar:
     #            corner2: the lower right corner of the "temperature bar"
     #            maximum: the value at which the bar is completely filled
     #              color: the color of the bar
+    #               text: the text that is the label
+    #               type: the thing that manages the data ??
+    #         isVertical: is non zero if the bar is fills vertically
     def __init__(self, window, txtLocation, unit, corner1, corner2, 
-                 maximum, color, text="Default", type="DEF"):
+                 maximum, color, text="Default", type="DEF", isVertical=0):
         self.line = Text(txtLocation, "READY")
         self.line.draw(window)
         self.window = window
         self.unit = unit
         self.upperLeft = corner1
-        self.bottom = corner2.getY()
-        self.right = corner2.getX()
+        self.bottomRight = corner2
         self.max = maximum
         self.color = color
         self.box = Rectangle(Point(0,0),Point(0,0))
-        self.corner2 = corner2
         self.label = text
         self.type = type
+        self.isVertical = isVertical
 
     def update(self, data):
         self.box.undraw()
@@ -336,9 +342,12 @@ class DataWithBar:
             self.line.setText(str(float(data)) + " " + self.unit)
             if float(data) > self.max:
                 data = self.max
-            self.box = Rectangle(self.upperLeft,Point(float(data) / self.max * 
-                                (self.right - self.upperLeft.getX()) +
-                                 self.upperLeft.getX(),self.bottom))
+            if self.isVertical:
+                self.box = Rectangle(self.bottomRight,Point(self.upperLeft.getX(),self.bottomRight.getY() - float(data) / self.max *(self.bottomRight.getY() - self.upperLeft.getY())))
+            else:
+                self.box = Rectangle(self.upperLeft,Point(float(data) / self.max * 
+                                (self.bottomRight.getX() - self.upperLeft.getX()) +
+                                 self.upperLeft.getX(),self.bottomRight.getY()))
         self.box.setFill(self.color)
         self.box.draw(self.window)
         self.line.undraw()
@@ -347,9 +356,9 @@ class DataWithBar:
 
     #        window, name, name_x, name_y, bar_x, bar_y, length_x, length_y    
     def setUp(self):
-        Text(Point(self.upperLeft.getX() + 10, self.upperLeft.getY()), 
+        Text(Point(self.upperLeft.getX() - 50, self.upperLeft.getY() + (self.bottomRight.getY() - self.upperLeft.getY()) / 2), 
              self.label).draw(self.window)
-        Rectangle(self.upperLeft, self.corner2).draw(self.window)
+        Rectangle(self.upperLeft, self.bottomRight).draw(self.window)
     
 # Creates a 1-quadrant graph at specified location with vertical and horizontal
 #     length. New data can be added and will be plotted with respect to time. 
@@ -361,7 +370,6 @@ class Graph:
     #            tLength: the pixel length of the T-axis.
     #           initYmax: the initial data value for the maximum of the Y-axis.
     #           initTmax: the initial data value for the maximum of the T-axis.
-
     #            x_label: label for the bottom axis
     #            y_label: label for the top axis
     def __init__(self, window, origin, yLength, tLength, initYMax, 
@@ -504,6 +512,30 @@ class Graph:
         self.x_bounds.draw(self.window)
         self.y_bounds.draw(self.window)
         
+class PolarGraph:
+    # Parameters: window: graphics window
+    #          upperLeft: the upper left point where the graph will be drawn
+    #           diameter: the width across the graph (and height because it is a circle)
+    #               rMax: the maximum value of 
+    #              label: the label for the max value of the graph
+    #    currentLocation: the current location of the device for mobility
+    def __init__(self, window, upperLeft, diameter, rMax, label, currentLocation=[0.0,0.0]):
+        self.window = window
+        self.upperLeft = upperLeft
+        self.diameter = diameter
+        self.rMax = rMax
+        self.label = label
+        self.currentLocation = currentLocation
+            
+    def update(self):
+        pass
+    
+    def setUp(self):
+        Line(Point(self.upperLeft.getX() + diameter / 2, self.upperLeft.getY()),
+             Point(elf.upperLeft.getX() + diameter / 2, self.upperLeft.getY() + diameter)).draw(self.window)
+        Line(Point(self.upperLeft.getX(),self.uppereLeft.getY() + diameter / 2),
+             Point(self.upperLeft.getX() + diameter, self.uppereLeft.getY() + diameter / 2)).draw(self.window)
+        Circle(Point(upperLeft.getX() + diameter / 2, upperLeft.getY()), diameter / 2).draw(self.window)
 
 class Speed:
     def __init__(self, object, type="ACL1"):
