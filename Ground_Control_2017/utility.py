@@ -160,6 +160,7 @@ class Parser():
         
     def get(self, dataType):
         '''
+            @todo: do error checking on the data type
             Gets the first value in the queue of the given Name
             @param: takes in the name of a data type for which the user wants
             to receive data.
