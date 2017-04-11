@@ -1,5 +1,5 @@
 import graphics as gw
-import time
+import time as time_mod
 import math
 import threading
 import utility as util
@@ -118,34 +118,34 @@ class DataWindow(threading.Thread):
         #make a bunch of containers
         self.containers = []
         #graph container
-        container1 = Container(self.window, Point(5, 150), 600, 445)
+        container1 = Container(self.window, self, Point(5, 150), 600, 445)
         container1.add(self.altGraph)
         #temperature container
-        container2 = Container(self.window, Point(610, 155), 580, 190)
+        container2 = Container(self.window, self, Point(610, 155), 580, 190)
         container2.add(self.aTempData)
         container2.add(self.bTempData)
         container2.add(self.cTempData)
         #pressure and readings container
-        container3 = Container(self.window, Point(610, 5), 580, 140)
+        container3 = Container(self.window, self, Point(610, 5), 580, 140)
         container3.add(self.press)
         container3.add(self.acclData)
         container3.add(self.speedData)
         #altitude container
-        container4 = Container(self.window, Point(5,5), 600, 140)
+        container4 = Container(self.window, self, Point(5,5), 600, 140)
         container4.add(self.altData)
         
         
-        self.__register_type_callback(self.altGraph)
-        self.__register_type_callback(self.aTempData)
-        self.__register_type_callback(self.bTempData)
-        self.__register_type_callback(self.cTempData)
-        self.__register_type_callback(self.press)
-        self.__register_type_callback(self.acclData)
+        #self.__register_type_callback(self.altGraph)
+        #self.__register_type_callback(self.aTempData)
+        #self.__register_type_callback(self.bTempData)
+        #self.__register_type_callback(self.cTempData)
+        #self.__register_type_callback(self.press)
+        #self.__register_type_callback(self.acclData)
         #Instead register a speed object with reference to speedData
         #self.__register_type_callback(self.speedData)
-        self.__register_type_callback(Speed(object=self.speedData, 
-                                            type=self.speedData.type))
-        self.__register_type_callback(self.altData)
+        #self.__register_type_callback(Speed(object=self.speedData, 
+         #                                   type=self.speedData.type))
+        #self.__register_type_callback(self.altData)
         
 
         #add the containers
@@ -166,7 +166,7 @@ class DataWindow(threading.Thread):
         self.paused.clear()
         
         while self.running.isSet():
-            timeStart = time.time()
+            timeStart = time_mod.time()
             
             #updates new data points
             parser.update()
@@ -176,21 +176,24 @@ class DataWindow(threading.Thread):
                 #for each available data type, check to 
                 #see if new data came in
                 for key in self.types_to_objects.keys():
-                    data = parser.get(key)
+                    data = parser.get_data_tuple(key)
+                    
                     if data != None:
+                        doota = float(data[0])
+                        data_time = data[1]
                         #update all the items linked to this data type
                         for item in self.types_to_objects[key]:
-                            item.update(data)
+                            item.update(doota, data_time)
             
             # reports if render time is greater than sample time.
-            if time.time() - timeStart > sampleTime:
-                print("TIME! " + str(round(time.time() - timeStart, 3)))
-            while time.time() - timeStart < sampleTime:
-                time.sleep(0.03)
+            if time_mod.time() - timeStart > sampleTime:
+                print("TIME! " + str(round(time_mod.time() - timeStart, 3)))
+            while time_mod.time() - timeStart < sampleTime:
+                time_mod.sleep(0.03)
             
             #pauses runtime
             while self.paused.isSet():
-                time.sleep(0.03)
+                time_mod.sleep(0.03)
             
             # updates GPS location of device and saves it as "location"
             
@@ -210,7 +213,7 @@ class DataWindow(threading.Thread):
             except:
                 print ("Illegal Container")
                 
-    def __register_type_callback(self, object):
+    def __register_type_callback__(self, object):
         '''
         @todo: enforce that object has type field and update method
         '''
@@ -239,7 +242,7 @@ def record(output, spacing, data):
 #organizes items in boxes on the screen.
 #CAN ALSO BE USED FOR DTECTING WHEN A GROUP OF ITEMS ARE SELECTED
 class Container:    
-    def __init__(self, window, position=Point(0,0), max_length=0, max_height=0):
+    def __init__(self, window, origin, position=Point(0,0), max_length=0, max_height=0, ):
         #the Items in this containers
         self.items = []
         #the window to draw stuff to
@@ -248,12 +251,15 @@ class Container:
         self.origin = position #top left of where container is drawn
         self.max_x = max_length #max length 
         self.max_y = max_height #max height
+        self.parent = origin
     
-    def add(self, component):
+    def add(self, item):
         '''
         @todo: update container dimensions
         '''
-        self.items.append(component)
+        self.items.append(item)
+        self.parent.__register_type_callback__(item)
+        
         
     def setUp(self):
         Rectangle(self.origin, Point(self.origin.getX()+self.max_x,
@@ -284,7 +290,7 @@ class DataField:
         self.max_len = 0 #max length to be used 
         
     # sets and displays new data
-    def update(self, data):
+    def update(self, data, time):
         if data != None:
             temp = self.line.getText()
             if (len(temp) > self.max_len):
@@ -334,7 +340,7 @@ class DataWithBar:
         self.type = type
         self.isVertical = isVertical
 
-    def update(self, data):
+    def update(self, data, time):
         self.box.undraw()
         if data == "NO":
             self.line.setText("(No Data)")
@@ -390,6 +396,7 @@ class Graph:
         self.y_label = y_label
         self.type = type
         self.nib_const = 0.9
+        self.time = 0;
         self.x_bounds = Text(Point(origin.getX()+self.tLength*self.nib_const+35,
                                    origin.getY()+15), "READY") #displays the x bounds
         self.y_bounds = Text(Point(origin.getX()-30, 
@@ -398,35 +405,49 @@ class Graph:
         
 
     # adds a data point and redraws graph
-    def update(self, data): # takes a data point and redraws the graph
+    def update(self, data, time): # takes a data point and redraws the graph
         if len(self.points) == 0:
             self.points.append(Point(0, data * self.yLength / self.currentYMax))
-            self.oldTime = time.time()
+            #self.oldTime = time_mod.time()
         else: 
-            self.points.append(Point(self.points[-1].getX() + self.tLength * (time.time() - self.oldTime) / self.currentTMax, 
+            self.points.append(Point(self.points[-1].getX() + self.tLength * 
+                                     (time - self.time) / 
+                                     self.currentTMax, 
                                      data * self.yLength / self.currentYMax))
-            self.oldTime = time.time()
-        doRedraw = 0
+            #self.oldTime = time_mod.time()
+        self.time = time
+        
+        doRedraw = False
         while(data > self.currentYMax or data < - self.currentYMax):
-            doRedraw = 1
+            doRedraw = True
             oldMax = self.currentYMax
-            self.currentYMax  = self.currentYMax * 1.5 # extends y-axis  by 1.5 each time max data is reached (change later?)
+            # extends y-axis  by 1.5 each time max data 
+            # is reached (change later?)
+            self.currentYMax  = self.currentYMax * 1.5
             for i in range(0,len(self.points)):
-                self.points[i] = Point(self.points[i].getX(), self.points[i].getY() * oldMax / self.currentYMax)
+                self.points[i] = Point(self.points[i].getX(), 
+                                       self.points[i].getY() * oldMax / 
+                                       self.currentYMax)
+                
         while self.points[-1].getX() > self.tLength:
-            doRedraw = 1
+            doRedraw = True
             oldMax = self.currentTMax
-            self.currentTMax += 10 # extends t-axis 10 seconds each time the max time is reached (change later?)
+            # extends t-axis 10 seconds each time the max time 
+            # is reached (change later?)
+            self.currentTMax += 10
             for i in range(0,len(self.points)):
-                self.points[i] = Point(self.points[i].getX() * oldMax / self.currentTMax, self.points[i].getY())
+                self.points[i] = Point(self.points[i].getX() * oldMax / 
+                                       self.currentTMax, self.points[i].getY())
         if doRedraw:
             self.redraw() # redraws all points and lines
         else: # draw new point only
-            p = Point(self.origin.getX() + self.points[-1].getX(),self.origin.getY() - self.points[-1].getY())
+            p = Point(self.origin.getX() + self.points[-1].getX(), 
+                      self.origin.getY() - self.points[-1].getY())
             p.setFill(self.color)
             self.displayPoints.append(p)
             p.draw(self.window)
-            if len(self.displayPoints) > 1 and len(self.displayPoints) < self.tLength / self.graphicsFactor:
+            if len(self.displayPoints) > 1 and \
+               len(self.displayPoints) < self.tLength / self.graphicsFactor:
                 l = Line(p,self.displayPoints[-2])
                 l.setFill(self.color)
                 l.draw(self.window)
@@ -542,15 +563,17 @@ class Speed:
         self.type = type
         self.callback_ref = object
         self.speed = 0.0
+        self.time = 0
         
-    def update(self, data):
+    def update(self, data, time):
         '''
         if currentData[0] != "NO":
                 self.speed += float(currentData[0]) * sampleTime
                 '''
-        self.speed += float(data) * sampleTime
-        self.callback_ref.update(self.speed)
+        self.speed += float(data) * (time - self.time);
+        self.time = time
+        self.callback_ref.update(self.speed, time)
         
 # record output
-#recordTime = str(time.localtime(time.time())[4]) + ", " + str(round(time.localtime(time.time())[5] + math.modf(time.time())[0],2))
+#recordTime = str(time_mod.localtime(time.time())[4]) + ", " + str(round(time.localtime(time.time())[5] + math.modf(time.time())[0],2))
 #record(output, 14, (recordTime, currentData[0], round(self.speed, 2), round(self.altitude, 2), currentData[1], currentData[2], currentData[3], currentData[4]))

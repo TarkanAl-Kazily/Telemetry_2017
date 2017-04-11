@@ -3,6 +3,7 @@ import multiprocessing as mp
 import serial
 from collections import deque
 import re
+import time
 baudrate=115200
 inputFile = "sample_input.txt"
 outputFile = "log.txt"
@@ -49,12 +50,14 @@ class Parser():
             @requires: serial port is open.
             @raise IllegalStateException: if the serial port is not open 
         '''
+        
         if (self.ser.isOpen()):
             #temp = self.ser.readline().strip()
             temp = self.ser.read_all().strip()
         else:
             temp = self.input.readline().strip()
-            #OLD CODE FOR 1 value at a time
+        
+        timestamp = time.time()
 
         print temp
             
@@ -63,6 +66,7 @@ class Parser():
             self.output.write(temp +"\n")
             self.output.flush()
             
+            #Parse the input
             parsed_output = self.parse_string_multiple(temp)
             
             if parsed_output != None:
@@ -73,11 +77,12 @@ class Parser():
                     if (string != ''): 
                         if len(string) == 4:
                             type = string
-                            measurement = parsed_output[i+1]
+                            measurement = (parsed_output[i+1], timestamp)
                             if not self.dataDict.has_key(type):
+                                #add empty queue of new data type
                                 temp = {type : deque([])}
                                 self.dataDict.update(temp)
-                    
+                            #Add the measurement to the queue
                             self.add_to_queue(type, measurement)
                             i += 1
                     
@@ -164,8 +169,9 @@ class Parser():
             Gets the first value in the queue of the given Name
             @param: takes in the name of a data type for which the user wants
             to receive data.
-            @return: if the name is not None and is in the dictionary, return
-            the first value in the queue if there exists one. else, return None
+            @return: if the name is not None and is in the dictionary, returns
+            the first value in the queue converted to a float if there exists 
+            one. Otherwise, return None
         '''
         if (self.dataDict.get(dataType) == None or 
             self.isEmpty(self.dataDict.get(dataType))):
@@ -176,6 +182,24 @@ class Parser():
                 
             return float(data)
         
+    def get_data_tuple(self, dataType):
+        '''
+            @todo: do error checking on the data type
+            Gets the first value in the queue of the given Name
+            @param: takes in the name of a data type for which the user wants
+            to receive data.
+            @return: if the name is not None and is in the dictionary, return
+            the first object in the queue if there exists one.
+            Otherwise, return None
+        '''
+        if (self.dataDict.get(dataType) == None or 
+            self.isEmpty(self.dataDict.get(dataType))):
+            return None
+        else:
+            data = self.dataDict.get(dataType).pop()
+            self.dataItemsAvailable -= 1
+                
+            return data
         
 class IllegalSerialAccess(Exception):   
     '''
