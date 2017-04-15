@@ -67,36 +67,36 @@ class DataWindow(threading.Thread):
         
         # initialize data fields
         self.altData = DataField(self.window, Point(350,75), "(m)", 
-                                 "Altitude: ", 32, "ACL1")
+                                 "Altitude: ", 32, ("ACL1",))
         self.speedData = DataField(self.window, Point(780,30), "(m/s)",
-                                   "Speed: ",15,"ACL1")
+                                   "Speed: ",15,("ACL1",))
         self.acclData = DataField(self.window, Point(1050,30), "(m/s^2)",
-                                  "Y-Accel: ",15,"ACL1")
+                                  "Y-Accel: ",15,("ACL1",))
         
         #init temperature objects
         self.aTempData = DataWithBar(self.window, Point(950,200), 
                                      "*C",Point(750,190),Point(1150,210), 
-                                     aTempMax, "green", "Temp A: ", "TEM1")
+                                     aTempMax, "green", "Temp A: ", ("TEM1",))
         
         self.bTempData = DataWithBar(self.window, Point(950,250), 
                                      "*C",Point(750,240),Point(1150,260), 
-                                     bTempMax, "red", "Temp B: ", "TEM2")
+                                     bTempMax, "red", "Temp B: ", ("TEM2",))
         
         self.cTempData = DataWithBar(self.window, Point(950,300), 
                                      "*C",Point(750,290),Point(1150,310), 
-                                     cTempMax, "pink", "Temp C: ","TEM3")
+                                     cTempMax, "pink", "Temp C: ",("TEM3",))
         
         #makes a pressure bar graph
         self.press = DataWithBar(self.window,Point(975,100),"(tor)",
                                  Point(775,90), Point(1175,110),pressMax, 
-                                 "blue", "Pressure: ", "PRE1", 1)
+                                 "blue", "Pressure: ", ("PRE1",), 1)
         
 
         
         # Make the altitude graph (which is actually acceleration rn)
         self.altGraph = Graph(self.window, self.origin, self.yMax, self.xMax, 
                               self.currentAltMax, self.currentTMax, "blue", 
-                              "Time", "Alt", "ACL1")
+                              "Time", "Alt", ("ACL1",))
 
 
         
@@ -180,7 +180,7 @@ class DataWindow(threading.Thread):
                 container.setUp()
             except:
                 print ("Illegal Container")
-                
+    """
     def __register_type_callback__(self, object):
         '''
         @todo: enforce that object has type field and update method
@@ -193,7 +193,24 @@ class DataWindow(threading.Thread):
         if (self.types_to_objects.has_key(type)):
             self.types_to_objects[type].append(object)
         else:
-            self.types_to_objects.update({type:[object]})
+            self.types_to_objects.update({type:[object]})\
+    """
+            
+    def __register_type_callback__(self, object):
+        '''
+        @todo: enforce that object has type field and update method
+        '''
+        #NOW A TUPLE ITERATE OVER 
+        type_tup = object.type
+        
+        '''
+        @todo: can be reduced to one line i think
+        '''
+        for type in type_tup:
+            if (self.types_to_objects.has_key(type)):
+                self.types_to_objects[type].append(object)
+            else:
+                self.types_to_objects.update({type:[object]})
             
 #-------------------------------------------------------------------------------
 #        MODULE FUNCTIONS
@@ -211,7 +228,7 @@ def record(output, spacing, data):
 #organizes items in boxes on the screen.
 #CAN ALSO BE USED FOR DTECTING WHEN A GROUP OF ITEMS ARE SELECTED
 class Container(object):    
-    def __init__(self, window, origin, position=Point(0,0), max_length=0, max_height=0, ):
+    def __init__(self, window, parent, position=Point(0,0), max_length=0, max_height=0, ):
         #the Items in this containers
         self.items = []
         #the window to draw stuff to
@@ -220,7 +237,7 @@ class Container(object):
         self.origin = position #top left of where container is drawn
         self.max_x = max_length #max length 
         self.max_y = max_height #max height
-        self.parent = origin
+        self.parent = parent
     
     def add(self, item):
         '''
