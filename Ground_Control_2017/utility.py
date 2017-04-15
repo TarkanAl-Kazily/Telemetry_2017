@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-import multiprocessing as mp
-import serial
+from serial import Serial
 from collections import deque
 import re
 import time
@@ -13,14 +12,14 @@ class Parser():
     #Initializes fields in the class
     #contains a serial object for receiving 
     #data from the radio module
-    def __init__(self):
-        self.ser = serial.Serial()
+    def __init__(self, dict={}):
+        
         #self.ser._baudrate=115200
         #number of items left in queue
+        self.ser = Serial()
         self.dataItemsAvailable = 0
-        self.dataDict = {}
+        self.dataDict = dict
         
-    
     def open_port(self, portName):
         '''
         Opens serial port which was initialized with given name
@@ -31,7 +30,7 @@ class Parser():
                 opened successfully or not
         '''
         try:
-            self.ser = serial.Serial(portName, timeout=2, baudrate=baudrate) #open serial port
+            self.ser = Serial(portName, timeout=2, baudrate=baudrate) #open serial port
             self.ser.reset_input_buffer()
         except:
             print "Going into file mode"
@@ -41,7 +40,7 @@ class Parser():
         self.output = open(outputFile, "w")
         
         #returns whether or not the port is open
-        return self.ser.is_open
+        return self.ser.isOpen()
     
     def update(self):
         '''
@@ -51,7 +50,7 @@ class Parser():
             @raise IllegalStateException: if the serial port is not open 
         '''
         
-        if (self.ser.isOpen()):
+        if (self.ser.closed):
             #temp = self.ser.readline().strip()
             temp = self.ser.read_all().strip()
         else:
@@ -104,7 +103,7 @@ class Parser():
             '''
             
     def isEmpty(self, queue):
-        return queue == deque([])
+        return len(queue) == 0
         
     def parse_string(self, string): 
         '''
@@ -180,7 +179,7 @@ class Parser():
             data = self.dataDict.get(dataType).pop()
             self.dataItemsAvailable -= 1
                 
-            return float(data)
+            return float(data[0])
         
     def get_data_tuple(self, dataType):
         '''

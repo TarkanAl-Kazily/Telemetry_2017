@@ -56,7 +56,6 @@ class DataWindow(threading.Thread):
         self.yMax = 315 # pixel length of y axis #315
         self.xMax = 465 # pixel length of x axis #465
         
-        
         #Grab Args
         #self.args=args
         self.kwargs=kwargs
@@ -65,20 +64,6 @@ class DataWindow(threading.Thread):
         #Grab window from kwargs
         self.window = kwargs['window']
         self.types_to_objects = {}
-        
-        #Old, unneccessary initializations
-        '''
-        self.altData = DataField(self.window, Point(350,75), "(m)", 
-                                 "Altitude: ", 32, "ALTI1")
-        self.speedData = DataField(self.window, Point(780,30), "(m/s)",
-                                   "Speed: ",15,"SPED1")
-        self.yLabel = DataField(self.window, Point(40,225), "")
-        self.xLabel = DataField(self.window, Point(540,545), "")
-        
-        self.dataFields = (self.altData, self.speedData, self.acclData, 
-                   self.aTempData, self.bTempData, self.cTempData, 
-                   self.press)  
-        '''
         
         # initialize data fields
         self.altData = DataField(self.window, Point(350,75), "(m)", 
@@ -134,20 +119,6 @@ class DataWindow(threading.Thread):
         container4 = Container(self.window, self, Point(5,5), 600, 140)
         container4.add(self.altData)
         
-        
-        #self.__register_type_callback(self.altGraph)
-        #self.__register_type_callback(self.aTempData)
-        #self.__register_type_callback(self.bTempData)
-        #self.__register_type_callback(self.cTempData)
-        #self.__register_type_callback(self.press)
-        #self.__register_type_callback(self.acclData)
-        #Instead register a speed object with reference to speedData
-        #self.__register_type_callback(self.speedData)
-        #self.__register_type_callback(Speed(object=self.speedData, 
-         #                                   type=self.speedData.type))
-        #self.__register_type_callback(self.altData)
-        
-
         #add the containers
         self.containers.append(container1);
         self.containers.append(container2);
@@ -158,10 +129,7 @@ class DataWindow(threading.Thread):
         self.running = threading.Event()
         self.paused = threading.Event()
         
-    def run(self):        
-        #output.write("////////// " + time.asctime(time.localtime(time.time())) + " //////////\n")
-        #output.write("Time (min, s) Accl (m/s^2)  y-speed (m/s) altitude (m)  aTemp (*C)    bTemp (*C)    cTemp (*C)    pressure (atm)\n")
-        
+    def run(self):
         self.running.set()
         self.paused.clear()
         
@@ -226,13 +194,14 @@ class DataWindow(threading.Thread):
             self.types_to_objects[type].append(object)
         else:
             self.types_to_objects.update({type:[object]})
-                
+            
+#-------------------------------------------------------------------------------
+#        MODULE FUNCTIONS
+#-------------------------------------------------------------------------------
 def record(output, spacing, data):
     for d in data:
         output.write(str(d) + (spacing - len(str(d))) * " ")
-    output.write("\n")
-
-    
+    output.write("\n")    
 #-------------------------------------------------------------------------------
 #        CLASSES
 #-------------------------------------------------------------------------------
@@ -241,7 +210,7 @@ def record(output, spacing, data):
 #Used for eventual automatic display of elements on the screen which
 #organizes items in boxes on the screen.
 #CAN ALSO BE USED FOR DTECTING WHEN A GROUP OF ITEMS ARE SELECTED
-class Container:    
+class Container(object):    
     def __init__(self, window, origin, position=Point(0,0), max_length=0, max_height=0, ):
         #the Items in this containers
         self.items = []
@@ -349,7 +318,10 @@ class DataWithBar:
             if float(data) > self.max:
                 data = self.max
             if self.isVertical:
-                self.box = Rectangle(self.bottomRight,Point(self.upperLeft.getX(),self.bottomRight.getY() - float(data) / self.max *(self.bottomRight.getY() - self.upperLeft.getY())))
+                self.box = Rectangle(self.bottomRight,Point(self.upperLeft.getX(),
+                                    self.bottomRight.getY() - float(data) / 
+                                    self.max *(self.bottomRight.getY() - 
+                                               self.upperLeft.getY())))
             else:
                 self.box = Rectangle(self.upperLeft,Point(float(data) / self.max * 
                                 (self.bottomRight.getX() - self.upperLeft.getX()) +
@@ -402,7 +374,6 @@ class Graph:
         self.y_bounds = Text(Point(origin.getX()-30, 
                                    origin.getY()-self.yLength*self.nib_const-20), 
                                    "READY") #displays the y bounds
-        
 
     # adds a data point and redraws graph
     def update(self, data, time): # takes a data point and redraws the graph
@@ -502,7 +473,6 @@ class Graph:
         #based on the dimensions of the smaller of the two dimensions
         #axis_buffer = max(70, min(self.tLength, self.yLength) * 0.05)
         
-        
         #magic buffer for the line is fifty
         Line(Point(self.origin.getX(),self.origin.getY()),
              Point(self.origin.getX(),self.origin.getY()-self.yLength)
@@ -573,7 +543,36 @@ class Speed:
         self.speed += float(data) * (time - self.time);
         self.time = time
         self.callback_ref.update(self.speed, time)
+
+'''
+Code has a hard time working and is not worth the massive amout of effort to get
+working        
+class ParallelParser:
+    def __init__(self):
+        self.dataDict = {}
+        self.parser = util.Parser(self.dataDict)
+            
+    def start(self):
+        self.parser.start();
+            
+    def get(self, dataType):
         
-# record output
-#recordTime = str(time_mod.localtime(time.time())[4]) + ", " + str(round(time.localtime(time.time())[5] + math.modf(time.time())[0],2))
-#record(output, 14, (recordTime, currentData[0], round(self.speed, 2), round(self.altitude, 2), currentData[1], currentData[2], currentData[3], currentData[4]))
+            @todo: do error checking on the data type
+            Gets the first value in the queue of the given Name
+            @param: takes in the name of a data type for which the user wants
+            to receive data.
+            @return: if the name is not None and is in the dictionary, return
+            the first object in the queue if there exists one.
+            Otherwise, return None
+        
+        if (self.dataDict.get(dataType) == None or 
+            self.isEmpty(self.dataDict.get(dataType))):
+            return None
+        else:
+            data = self.dataDict.get(dataType).get()
+            self.dataItemsAvailable -= 1
+                
+            return data
+    def is_available(self):
+        return True
+''' 

@@ -8,12 +8,6 @@ import display as disp
 import threading
 import time
 
-
-#Tkinter root
-#graphics lib complains when it does not get the original instantiation 
-root = gw._root
-
-
 class ThreadManager():
 	
 	def __init__(self):
@@ -216,10 +210,11 @@ class Application(tk.Frame):
 #-------------------------------------------------------------------------------
 # SCRIPT TO RUN
 #-------------------------------------------------------------------------------
-
-app = Application(root)
-app.master.title('SARP Data Dominator')
-app.mainloop()
+if __name__ == "__main__":
+	root = gw._root
+	app = Application(root)
+	app.master.title('SARP Data Dominator')
+	app.mainloop()
 
 
 
