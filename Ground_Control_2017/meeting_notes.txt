@@ -1,0 +1,28 @@
+Cartesian/Polar graph of latitude/ longitude
+ OR compass style thing
+ 
+ Warning items
+ 
+ Integrate GPS to ground station.
+ 
+ erase unused data from parser
+ 
+ timer for data and indicator for recieved 
+ %malformed 
+ 
+ Derek:
+    Define class interfaces for items
+    Add more features (radar thingy, vertical bars)
+    
+Tim: 
+    Physical Sarptop
+    
+Cole:
+    Parser and regex
+    Tests for parser
+    
+James: 
+    Everything else
+        associate data with time stamps of reception
+        convert to multithreading
+        add more gui options
