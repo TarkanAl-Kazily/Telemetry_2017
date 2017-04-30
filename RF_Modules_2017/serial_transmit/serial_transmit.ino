@@ -1,24 +1,44 @@
-// rf22_reliable_datagram_client.pde
-// -*- mode: C++ -*-
-// Example sketch showing how to create a simple addressed, reliable messaging client
-// with the RHReliableDatagram class, using the RH_RF22 driver to control a RF22 radio.
-// It is designed to work with the other example rf22_reliable_datagram_server
-// Tested on Duemilanove, Uno with Sparkfun RFM22 wireless shield
-// Tested on Flymaple with sparkfun RFM22 wireless shield
-// Tested on ChiKit Uno32 with sparkfun RFM22 wireless shield
+/* 
+ * serial_transmit.ino
+ * Author: Tarkan Al-Kazily
+ *
+ * This program is designed for the University of Washington's undergraduate
+ * rocket club, The Society for Advanced Rocket Propulsion, for use in
+ * ESRA's Intercollegiate Rocket Engineering Competition in 2017.
+ *
+ * This program is part of the Data Diagnostics Telemetry system. It processes
+ * data from the first serial port and transmits it using an RFM23BP board.
+ * Additionally it logs the data it receives to a Micro SD card using a Sparkfun
+ * OpenLog.
+ *
+ * See the RadioHead libraries for documentation on how to use the RFM23BP.
+ */
 
 #include <RHReliableDatagram.h>
+#define RH_RF22_MAX_MESSAGE_LEN 120
 #include <RH_RF22.h>
 #include <SPI.h>
 
 #define CLIENT_ADDRESS 1
 #define SERVER_ADDRESS 2
 
+// The standard delay in milliseconds
+#define DELAY 150
+// The period in milliseconds to transmit call sign
+#define CALL_FREQ 60000
+
 // Singleton instance of the radio driver
 RH_RF22 driver;
 
 // Class to manage message delivery and receipt, using the driver declared above
 RHReliableDatagram manager(driver, CLIENT_ADDRESS);
+
+// Dont put this on the stack:
+uint8_t buf[RH_RF22_MAX_MESSAGE_LEN];
+// The amateur radio call sign - MAKE SURE TO UPDATE THIS 
+uint8_t call[] = {'[', 'K', 'I', '7', 'A', 'F', 'R', '-', '2', ']'};
+// A counter to keep track of whether to send out call sign
+unsigned long time;
 
 void setup() {
   Serial.begin(9600);
@@ -27,69 +47,64 @@ void setup() {
   // Defaults after init are 434.0MHz, 0.05MHz AFC pull-in, modulation FSK_Rb2_4Fd36
   Serial3.begin(9600);
   Serial3.print("Beginning test\r");
+  time = millis();
 }
-
-// Dont put this on the stack:
-uint8_t buf[RH_RF22_MAX_MESSAGE_LEN];
-const char *call = "KI7AFR-2";
-uint8_t count = 0;
 
 void loop() {
   if (Serial.available() > 0) {
-    uint8_t data[50];
-    for (int i = 0; i < sizeof(data); i++) {
-      data[i] = 0;
+    for (uint8_t i = 0; i < RH_RF22_MAX_MESSAGE_LEN; i++) {
+      buf[i] = 0;
     }
-    uint8_t result = Serial.readBytes((char*) data, sizeof(data));
+    uint8_t result = Serial.readBytes((char*) buf, sizeof(buf));
     if (result != 0) {
-      Serial3.write(data, sizeof(data));
+
+      // log incoming data
+      Serial3.write(buf, sizeof(buf));
       Serial3.write(13); // new line as int
+
       Serial.println("Sending to rf22_reliable_datagram_server");
 
       // Send a message to manager_server
-      if (manager.sendtoWait(data, sizeof(data), SERVER_ADDRESS)) {
+      if (manager.sendtoWait(buf, sizeof(buf), SERVER_ADDRESS)) {
         // Now wait for a reply from the server
         uint8_t len = sizeof(buf);
         uint8_t from;
         if (manager.recvfromAckTimeout(buf, &len, 2000, &from)) {
-          Serial.print("got reply from : 0x");
-          Serial.print(from, HEX);
-          Serial.print(": ");
-          Serial.println((char*)buf);
+          printAck(from);
         } else {
           Serial.println("No reply, is rf22_reliable_datagram_server running?");
         }
       } else {
         Serial.println("Did not recieve acknowledgement");
+        Serial3.print("Did not recieve acknowledgement\r");
       }
-      delay(100);
+
+      delay(DELAY);
     }
   }
-  if (count++ > 100) {
-    uint8_t data[10];
-    uint8_t i = 0;
-    for (const char *curr = call; *curr != '\0'; curr++) {
-      data[i++] = *curr;
-    }
-    data[8] = data[9] = 0;
+  if (time - millis() > CALL_FREQ) {
+
     Serial.println("Sending callsign");
-    if (manager.sendtoWait(data, sizeof(data), SERVER_ADDRESS)) {
+    if (manager.sendtoWait(call, sizeof(call), SERVER_ADDRESS)) {
       // Now wait for a reply from the server
       uint8_t len = sizeof(buf);
       uint8_t from;
       if (manager.recvfromAckTimeout(buf, &len, 2000, &from)) {
-        Serial.print("got reply from : 0x");
-        Serial.print(from, HEX);
-        Serial.print(": ");
-        Serial.println((char*)buf);
+        printAck(from);
       } else {
         Serial.println("No reply, is rf22_reliable_datagram_server running?");
       }
     } else {
       Serial.println("Did not recieve acknowledgement");
     }
-    delay(100);
-    count = 0;
+    delay(DELAY);
   }
-  delay(10);
+}
+
+// Prints out to the serial port an acknowledgement message
+void printAck(uint8_t from) {
+  Serial.print("got reply from : 0x");
+  Serial.print(from, HEX);
+  Serial.print(": ");
+  Serial.println((char*)buf);
 }
