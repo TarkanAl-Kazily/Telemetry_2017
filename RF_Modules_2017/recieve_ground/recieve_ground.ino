@@ -46,7 +46,7 @@ void loop()
       Serial.print("got request from : 0x");
       Serial.print(from, HEX);
       Serial.print(": ");
-      Serial.println((char*)buf);
+      Serial.write(buf, len);
     }
   }
 }
