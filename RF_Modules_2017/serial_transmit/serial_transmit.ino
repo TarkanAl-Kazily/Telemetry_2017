@@ -23,9 +23,9 @@
 #define SERVER_ADDRESS 2
 
 // The standard delay in milliseconds
-#define DELAY 150
+#define DELAY 300 
 // The period in milliseconds to transmit call sign
-#define CALL_FREQ 60000
+#define CALL_FREQ 300000
 
 // Singleton instance of the radio driver
 RH_RF22 driver;
@@ -36,7 +36,7 @@ RHReliableDatagram manager(driver, CLIENT_ADDRESS);
 // Dont put this on the stack:
 uint8_t buf[RH_RF22_MAX_MESSAGE_LEN];
 // The amateur radio call sign - MAKE SURE TO UPDATE THIS 
-uint8_t call[] = {'[', 'K', 'I', '7', 'A', 'F', 'R', '-', '2', ']'};
+uint8_t call[10] = {'[', 'K', 'I', '7', 'A', 'F', 'R', '-', '2', ']'};
 // A counter to keep track of whether to send out call sign
 unsigned long time;
 
@@ -52,20 +52,21 @@ void setup() {
 
 void loop() {
   if (Serial.available() > 0) {
-    for (uint8_t i = 0; i < RH_RF22_MAX_MESSAGE_LEN; i++) {
-      buf[i] = 0;
+    uint8_t data[100];
+    for (int i = 0; i < sizeof(data); i++) {
+      data[i] = 0;
     }
-    uint8_t result = Serial.readBytes((char*) buf, sizeof(buf));
+    uint8_t result = Serial.readBytes((char*) data, sizeof(data));
     if (result != 0) {
 
       // log incoming data
-      Serial3.write(buf, sizeof(buf));
+      Serial3.write(data, sizeof(data));
       Serial3.write(13); // new line as int
 
       Serial.println("Sending to rf22_reliable_datagram_server");
 
       // Send a message to manager_server
-      if (manager.sendtoWait(buf, sizeof(buf), SERVER_ADDRESS)) {
+      if (manager.sendtoWait(data, sizeof(data), SERVER_ADDRESS)) {
         // Now wait for a reply from the server
         uint8_t len = sizeof(buf);
         uint8_t from;
@@ -82,10 +83,10 @@ void loop() {
       delay(DELAY);
     }
   }
-  if (time - millis() > CALL_FREQ) {
 
+  if (millis() - time > CALL_FREQ) {
     Serial.println("Sending callsign");
-    if (manager.sendtoWait(call, sizeof(call), SERVER_ADDRESS)) {
+    if (manager.sendtoWait(call, 10, SERVER_ADDRESS)) {
       // Now wait for a reply from the server
       uint8_t len = sizeof(buf);
       uint8_t from;
@@ -97,6 +98,7 @@ void loop() {
     } else {
       Serial.println("Did not recieve acknowledgement");
     }
+    time = millis();
     delay(DELAY);
   }
 }
