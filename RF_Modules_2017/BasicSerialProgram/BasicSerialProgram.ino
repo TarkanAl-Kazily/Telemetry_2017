@@ -1,19 +1,22 @@
 #include <Regexp.h>
 // Regexp docs: http://www.gammon.com.au/forum/?id=11063
+#define BAUD 115200
 
 
 // WORKS!
 void setup() {
 
-    Serial.begin(9600);
-    Serial1.begin(9600);
+    Serial.begin(BAUD);
+    Serial1.begin(BAUD);
     Serial.println("Hello World");
     boolean result = formatted("!ABC4:123456789;");
+    /*
     if (result) {
           Serial.println("\tFIRST Data Formatted Correctly");
       } else {
           Serial.println("\tFISRT Data Format Error");
       }
+      */
 }
 
 void loop() {
