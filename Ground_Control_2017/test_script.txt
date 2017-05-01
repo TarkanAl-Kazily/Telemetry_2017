@@ -1,0 +1,17 @@
+#Include hash on a line to have it be echoed to console rather than parsed
+#This document describes the form for defining a display's setup
+#
+# Note, All types should be in cartesian format i.e.
+# (type_1, type_2, type_3) 
+#
+#new_cont: CONTNAME ORIGIN_X ORIGIN_Y LENGTH HEIGHT
+#add_graph: CONTNAME TYPES X_LABEL Y_LABEL COLOR ORIGIN_X ORIGIN_Y LENGTH HEIGHT MAX_X MAX_Y
+
+#add_vert_bar: CONTNAME TYPES MAX UNIT LABEL COLOR ORIGIN_X ORIGIN_Y LENGTH HEIGHT
+
+#add_hor_bar: CONTNAME TYPES MAX UNIT LABEL COLOR ORIGIN_X ORIGIN_Y LENGTH HEIGHT
+#add_field: CONTNAME TYPES TEXTSIZE LABEL ORIGIN_X ORIGIN_Y
+
+new_cont: c1 5 150 600 445
+add_graph: c1 (ACL1) Time Alt blue 75 525 100 200 5 1000
+add_hor_bar: c1 (TEM1) 400 deg_c test pink 150 200 100 20

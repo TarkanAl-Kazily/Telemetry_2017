@@ -3,7 +3,7 @@ import time as time_mod
 import math
 import threading
 import utility as util
-from sqlite3.test import types
+import heapq
 
 # Do I need this???
 GraphWin = gw.GraphWin
@@ -45,16 +45,18 @@ class DataWindow(threading.Thread):
                  args=(), kwargs=None, verbose=None):
         
         super(DataWindow, self).__init__(group=group, target=target, 
-                                      name=name, verbose=verbose)
+                                        name=name, verbose=verbose)
+        '''
         # initialize tracked data and stuff
         self.speed = 0 # m/s
         self.altitude = 0 # m
         self.currentAltMax = 1000.0 # graph starts with max at 1 km
         self.currentTMax = 5.0 # graph starts with max at 5 seconds
         #75, 525 
-        self.origin = Point(75,525) # pixel at graph origin
+        #self.origin =  # pixel at graph origin
         self.yMax = 315 # pixel length of y axis #315
         self.xMax = 465 # pixel length of x axis #465
+        '''
         
         #Grab Args
         #self.args=args
@@ -65,6 +67,10 @@ class DataWindow(threading.Thread):
         self.window = kwargs['window']
         self.types_to_objects = {}
         
+        #make a bunch of containers
+        self.containers = load_layout("test_script.txt", self)
+        
+        '''
         # initialize data fields
         self.altData = DataField(self.window, Point(350,75), "(m)", 
                                  "Altitude: ", 32, ("ACL1",))
@@ -94,29 +100,26 @@ class DataWindow(threading.Thread):
 
         
         # Make the altitude graph (which is actually acceleration rn)
-        self.altGraph = Graph(self.window, self.origin, self.yMax, self.xMax, 
+        self.altGraph = Graph(self.window, Point(75,525), self.yMax, self.xMax, 
                               self.currentAltMax, self.currentTMax, "blue", 
                               "Time", "Alt", ("ACL1",))
-
-
         
-        #make a bunch of containers
-        self.containers = []
+        
         #graph container
-        container1 = Container(self.window, self, Point(5, 150), 600, 445)
+        container1 = Container(self, Point(5, 150), 600, 445)
         container1.add(self.altGraph)
         #temperature container
-        container2 = Container(self.window, self, Point(610, 155), 580, 190)
+        container2 = Container(self, Point(610, 155), 580, 190)
         container2.add(self.aTempData)
         container2.add(self.bTempData)
         container2.add(self.cTempData)
         #pressure and readings container
-        container3 = Container(self.window, self, Point(610, 5), 580, 140)
+        container3 = Container(self, Point(610, 5), 580, 140)
         container3.add(self.press)
         container3.add(self.acclData)
         container3.add(self.speedData)
         #altitude container
-        container4 = Container(self.window, self, Point(5,5), 600, 140)
+        container4 = Container(self, Point(5,5), 600, 140)
         container4.add(self.altData)
         
         #add the containers
@@ -124,14 +127,18 @@ class DataWindow(threading.Thread):
         self.containers.append(container2);
         self.containers.append(container3);
         self.containers.append(container4);
+        '''
         
         #Thread events
         self.running = threading.Event()
         self.paused = threading.Event()
         
+        
+        
     def run(self):
         self.running.set()
         self.paused.clear()
+        
         
         while self.running.isSet():
             timeStart = time_mod.time()
@@ -218,7 +225,148 @@ class DataWindow(threading.Thread):
 def record(output, spacing, data):
     for d in data:
         output.write(str(d) + (spacing - len(str(d))) * " ")
-    output.write("\n")    
+    output.write("\n")
+    
+def load_layout(filepath, parent):
+    try:
+        filehandler = open(filepath, "r")
+    except:
+        print "Illegal Path: "+ filepath
+        return
+    
+    cont_dict = {}
+    
+    for f in filehandler:
+        f = f.strip()
+        #ignore blank lines
+        if (len(f) == 0):
+            continue
+        #echo comments to console
+        if (f[0] == '#'):
+            print f
+            continue
+        
+        tokens = f.split(':')
+        #check size == 2
+        function = tokens[0]
+        args = tokens[1].strip().split(' ')
+        print tokens
+        
+        #Python was crafted by Satan himself and
+        #has no switch structure. Here instead is this bs
+        if (function == 'new_cont'):
+            add_container(args, cont_dict, parent)
+        elif (function == 'add_graph'):
+            add_graph(args, cont_dict, parent.window)
+        elif (function == 'add_vert_bar'):
+            add_vert_bar(args, cont_dict, parent.window)
+        elif (function == 'add_hor_bar'):
+            add_hor_bar(args, cont_dict, parent.window)
+        elif (function == 'add_field'):
+            add_field(args, cont_dict, parent.window)
+        else:
+            print "Error command "+function+" cannot be determined"
+    
+    filehandler.close()
+    
+    return cont_dict.values()
+
+def add_container(args, cont_dict, parent):
+    if (len(args) != 5):
+        print "Error: Illegal argument number."
+        return
+    cont = Container(parent, Point(int(args[1]), int(args[2])), 
+                     int(args[3]), int(args[4]))
+    cont_dict.update({args[0]:cont})
+    
+def add_graph(args, cont_dict, window):
+    if (len(args) != 11):
+        print "Error: Illegal argument number."
+        return
+    if (args[0] in cont_dict):
+        container = cont_dict[args[0]]
+        
+        #grab the type args
+        types = (args[1])[1:-1]
+        types = types.split(',')
+        for string in types:
+            string = string.strip()
+        
+        #Unsafe casting: Add checking
+        container.add(
+        Graph(window, Point(int(args[5]), int(args[6])), int(args[7]), int(args[8]), 
+                              float(args[10]), float(args[9]), args[4], 
+                              args[2], args[3], types))
+
+def add_vert_bar(args, cont_dict, window):
+    if (len(args) != 10):
+        print "Error: Illegal argument number."
+        return
+    if (args[0] in cont_dict):
+        container = cont_dict[args[0]]
+        
+        #grab the type args
+        types = (args[1])[1:-1]
+        types = types.split(',')
+        for string in types:
+            string = string.strip()
+
+        #Unsafe casting: Add checking
+        container.add(
+        DataWithBar(window, 
+                    Point(int(args[6]), int(args[7])), 
+                    args[3], 
+                    Point(int(args[6])-100, int(args[7])-10), 
+                    Point(int(args[6])+int(args[8]), int(args[7])+int(args[9])),
+                    int(args[2]),
+                    args[5], 
+                    args[4], 
+                    types, 1))
+        
+def add_hor_bar(args, cont_dict, window):
+    if (len(args) != 10):
+        print "Error: Illegal argument number."
+        return
+    if (args[0] in cont_dict):
+        container = cont_dict[args[0]]
+        
+        #grab the type args
+        types = (args[1])[1:-1]
+        types = types.split(',')
+        for string in types:
+            string = string.strip()
+        
+        #Unsafe casting: Add checking
+        container.add(
+        DataWithBar(window, 
+                    Point(int(args[6]), int(args[7])), 
+                    args[3], 
+                    Point(int(args[6])-100, int(args[7])-10), 
+                    Point(int(args[6])+int(args[8]), int(args[7])+int(args[9])),
+                    int(args[2]),
+                    args[5], 
+                    args[4], 
+                    types, 0))
+
+def add_field(args, cont_dict, window):
+    if (len(args) != 6):
+        print "Error: Illegal argument number."
+        return
+    if (args[0] in cont_dict):
+        container = cont_dict[args[0]]
+        
+        #grab the type args
+        types = (args[1])[1:-1]
+        types = types.split(',')
+        for string in types:
+            string = string.strip()
+        
+        self.altData = DataField(self.window, Point(350,75), "(m)", 
+                                 "Altitude: ", 32, ("ACL1",))
+        #Unsafe casting: Add checking
+        container.add(
+        Graph(window, Point(int(args[4]), int(args[5])), 
+              args[3], int(args[2]), types))
 #-------------------------------------------------------------------------------
 #        CLASSES
 #-------------------------------------------------------------------------------
@@ -228,11 +376,11 @@ def record(output, spacing, data):
 #organizes items in boxes on the screen.
 #CAN ALSO BE USED FOR DTECTING WHEN A GROUP OF ITEMS ARE SELECTED
 class Container(object):    
-    def __init__(self, window, parent, position=Point(0,0), max_length=0, max_height=0, ):
+    def __init__(self, parent, position=Point(0,0), max_length=0, max_height=0, ):
         #the Items in this containers
         self.items = []
         #the window to draw stuff to
-        self.window = window
+        self.window = parent.window
         self.types = [] #The type of data to update
         self.origin = position #top left of where container is drawn
         self.max_x = max_length #max length 
@@ -561,6 +709,8 @@ class Speed:
         self.time = time
         self.callback_ref.update(self.speed, time)
 
+
+        
 '''
 Code has a hard time working and is not worth the massive amout of effort to get
 working        
@@ -593,3 +743,59 @@ class ParallelParser:
     def is_available(self):
         return True
 ''' 
+        
+'''        
+#Need list or items and the contianer to put them in
+def place_items_in_container(items, container):
+    sum = 0
+    for item in items:
+        #something in here is too long
+        if (item.length > container.length):
+            return None
+        sum += item.length * item.height
+    
+    #elts can't possibly fit in container
+    if (sum > (container.height * container.length)):
+        # Throw error?
+        return None
+    
+    #use a sorted list as a queue.
+    minqueue = items.copy()
+    #add all the items to the queue and sort
+    minqueue.sort()
+    
+    mh_height = sum
+    
+    #continue until we have an acceptable height
+    while (mh_height > container.height):
+        #grab the smallest elt from the sorted list
+        smallest = minqueue.pop()
+        
+        index = minqueue
+        item_placed == False
+        while(item_placed):
+            largest = minqueue[index]
+            if (largest == A BUNDLE):
+                #Try to place in bundle
+                item_placed == True
+            else if ((largest.length + smallest.length) < container.length):
+                #put the largest and the smallest in the same bundle
+                item_placed == True
+            index--
+            if (index < 0):
+                #smallest item cannot be put anywhere else in the container
+                #and height is too high.
+                #bad layout
+                return None
+        
+        #successfully placed top elt somewhere else
+        mh_height -= smallest.height
+        
+class PlacementContainer:
+    def __init__(self, height, length):
+        self.items = []
+        self.height = height
+        self.length = length
+        
+    def can_place_to_right(self, item1, item2):
+'''   
