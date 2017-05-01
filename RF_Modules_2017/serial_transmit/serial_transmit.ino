@@ -25,7 +25,7 @@
 // The standard delay in milliseconds
 #define DELAY 300 
 // The period in milliseconds to transmit call sign
-#define CALL_FREQ 300000
+#define CALL_FREQ 3000
 
 // Singleton instance of the radio driver
 RH_RF22 driver;
@@ -40,6 +40,11 @@ uint8_t call[10] = {'[', 'K', 'I', '7', 'A', 'F', 'R', '-', '2', ']'};
 // A counter to keep track of whether to send out call sign
 unsigned long time;
 
+uint8_t data[RH_RF22_MAX_MESSAGE_LEN];
+
+// Prints an acknowledgement message
+void printAck(uint8_t from);
+
 void setup() {
   Serial.begin(9600);
   if (!manager.init())
@@ -52,28 +57,29 @@ void setup() {
 
 void loop() {
   if (Serial.available() > 0) {
-    uint8_t data[100];
     for (int i = 0; i < sizeof(data); i++) {
       data[i] = 0;
     }
     uint8_t result = Serial.readBytes((char*) data, sizeof(data));
+    Serial.print("RESULT WAS : ");
+    Serial.println(result);
     if (result != 0) {
 
       // log incoming data
-      Serial3.write(data, sizeof(data));
+      Serial3.write(data, result);
       Serial3.write(13); // new line as int
 
       Serial.println("Sending to rf22_reliable_datagram_server");
 
       // Send a message to manager_server
-      if (manager.sendtoWait(data, sizeof(data), SERVER_ADDRESS)) {
+      if (manager.sendtoWait(data, result, SERVER_ADDRESS)) {
         // Now wait for a reply from the server
         uint8_t len = sizeof(buf);
         uint8_t from;
         if (manager.recvfromAckTimeout(buf, &len, 2000, &from)) {
           printAck(from);
         } else {
-          Serial.println("No reply, is rf22_reliable_datagram_server running?");
+          Serial.println("Yippie!");
         }
       } else {
         Serial.println("Did not recieve acknowledgement");
@@ -93,7 +99,7 @@ void loop() {
       if (manager.recvfromAckTimeout(buf, &len, 2000, &from)) {
         printAck(from);
       } else {
-        Serial.println("No reply, is rf22_reliable_datagram_server running?");
+        Serial.println("She noticed me!");
       }
     } else {
       Serial.println("Did not recieve acknowledgement");

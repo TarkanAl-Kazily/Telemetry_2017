@@ -8,6 +8,7 @@
 // Tested on ChiKit Uno32 with sparkfun RFM22 wireless shield
 
 #include <RHReliableDatagram.h>
+#define RH_RF22_MAX_MESSAGE_LEN 120
 #include <RH_RF22.h>
 #include <SPI.h>
 
@@ -46,6 +47,7 @@ void loop()
       Serial.print(from, HEX);
       Serial.print(": ");
       Serial.write(buf, len);
+      Serial.println();
     }
   }
 }
