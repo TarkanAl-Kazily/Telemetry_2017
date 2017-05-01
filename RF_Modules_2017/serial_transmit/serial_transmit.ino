@@ -15,7 +15,6 @@
  */
 
 #include <RHReliableDatagram.h>
-#define RH_RF22_MAX_MESSAGE_LEN 120
 #include <RH_RF22.h>
 #include <SPI.h>
 
@@ -47,6 +46,7 @@ void printAck(uint8_t from);
 
 void setup() {
   Serial.begin(9600);
+  Serial.println(RH_RF22_MAX_MESSAGE_LEN);
   if (!manager.init())
     Serial.println("init failed");
   // Defaults after init are 434.0MHz, 0.05MHz AFC pull-in, modulation FSK_Rb2_4Fd36
