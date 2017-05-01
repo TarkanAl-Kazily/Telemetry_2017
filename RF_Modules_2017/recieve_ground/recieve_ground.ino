@@ -11,6 +11,12 @@
 #include <RH_RF22.h>
 #include <SPI.h>
 
+#ifdef DEBUG
+#define DEBUG_MESSAGE(x) Serial.print(x)
+#else
+#define DEBUG_MESSAGE(x)
+#endif
+
 #define CLIENT_ADDRESS 1
 #define SERVER_ADDRESS 2
 
@@ -26,7 +32,7 @@ void setup()
   if (!manager.init())
     Serial.println("init failed");
   // Defaults after init are 434.0MHz, 0.05MHz AFC pull-in, modulation FSK_Rb2_4Fd36
-  Serial.println(RH_RF22_MAX_MESSAGE_LEN);
+  DEBUG_MESSAGE(RH_RF22_MAX_MESSAGE_LEN);
 }
 
 uint8_t data[] = "Recieved";
@@ -42,11 +48,11 @@ void loop()
     uint8_t from;
     if (manager.recvfromAck(buf, &len, &from))
     {
-      Serial.print("got request from : 0x");
-      Serial.print(from, HEX);
-      Serial.print(": ");
+      DEBUG_MESSAGE("got request from : 0x");
+      DEBUG_MESSAGE(from, HEX);
+      DEBUG_MESSAGE(": ");
       Serial.write(buf, len);
-      Serial.println();
+      Serial.write('\n');
     }
   }
 }

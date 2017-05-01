@@ -18,6 +18,13 @@
 #include <RH_RF22.h>
 #include <SPI.h>
 
+// Define a debug macro if the DEBUG tag was set during compilation
+#ifdef DEBUG
+#define DEBUG_MESSAGE(x) Serial.print(x)
+#else
+#define DEBUG_MESSAGE(x)
+#endif
+
 #define CLIENT_ADDRESS 1
 #define SERVER_ADDRESS 2
 
@@ -46,9 +53,10 @@ void printAck(uint8_t from);
 
 void setup() {
   Serial.begin(9600);
-  Serial.println(RH_RF22_MAX_MESSAGE_LEN);
+  DEBUG_MESSAGE(RH_RF22_MAX_MESSAGE_LEN);
+  DEBUG_MESSAGE("\n");
   if (!manager.init())
-    Serial.println("init failed");
+    DEBUG_MESSAGE("init failed\n");
   // Defaults after init are 434.0MHz, 0.05MHz AFC pull-in, modulation FSK_Rb2_4Fd36
   Serial3.begin(9600);
   Serial3.print("Beginning test\r");
@@ -61,15 +69,16 @@ void loop() {
       data[i] = 0;
     }
     uint8_t result = Serial.readBytes((char*) data, sizeof(data));
-    Serial.print("RESULT WAS : ");
-    Serial.println(result);
+    DEBUG_MESSAGE("RESULT WAS : ");
+    DEBUG_MESSAGE(result);
+    DEBUG_MESSAGE("\n");
     if (result != 0) {
 
       // log incoming data
       Serial3.write(data, result);
       Serial3.write(13); // new line as int
 
-      Serial.println("Sending to rf22_reliable_datagram_server");
+      DEBUG_MESSAGE("Sending to rf22_reliable_datagram_server\n");
 
       // Send a message to manager_server
       if (manager.sendtoWait(data, result, SERVER_ADDRESS)) {
@@ -79,10 +88,10 @@ void loop() {
         if (manager.recvfromAckTimeout(buf, &len, 2000, &from)) {
           printAck(from);
         } else {
-          Serial.println("Yippie!");
+          DEBUG_MESSAGE("Yippie!\n");
         }
       } else {
-        Serial.println("Did not recieve acknowledgement");
+        DEBUG_MESSAGE("Did not recieve acknowledgement\n");
         Serial3.print("Did not recieve acknowledgement\r");
       }
 
@@ -91,7 +100,7 @@ void loop() {
   }
 
   if (millis() - time > CALL_FREQ) {
-    Serial.println("Sending callsign");
+    DEBUG_MESSAGE("Sending callsign\n");
     if (manager.sendtoWait(call, 10, SERVER_ADDRESS)) {
       // Now wait for a reply from the server
       uint8_t len = sizeof(buf);
@@ -99,10 +108,10 @@ void loop() {
       if (manager.recvfromAckTimeout(buf, &len, 2000, &from)) {
         printAck(from);
       } else {
-        Serial.println("She noticed me!");
+        DEBUG_MESSAGE("She noticed me!\n");
       }
     } else {
-      Serial.println("Did not recieve acknowledgement");
+      DEBUG_MESSAGE("Did not recieve acknowledgement\n");
     }
     time = millis();
     delay(DELAY);
@@ -111,8 +120,9 @@ void loop() {
 
 // Prints out to the serial port an acknowledgement message
 void printAck(uint8_t from) {
-  Serial.print("got reply from : 0x");
-  Serial.print(from, HEX);
-  Serial.print(": ");
-  Serial.println((char*)buf);
+  DEBUG_MESSAGE("got reply from : 0x");
+  DEBUG_MESSAGE(from, HEX);
+  DEBUG_MESSAGE(": ");
+  DEBUG_MESSAGE((char*)buf);
+  DEBUG_MESSAGE("\n);
 }
