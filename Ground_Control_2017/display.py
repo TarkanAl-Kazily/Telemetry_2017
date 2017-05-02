@@ -47,18 +47,6 @@ class DataWindow(threading.Thread):
         
         super(DataWindow, self).__init__(group=group, target=target, 
                                         name=name, verbose=verbose)
-        '''
-        # initialize tracked data and stuff
-        self.speed = 0 # m/s
-        self.altitude = 0 # m
-        self.currentAltMax = 1000.0 # graph starts with max at 1 km
-        self.currentTMax = 5.0 # graph starts with max at 5 seconds
-        #75, 525 
-        #self.origin =  # pixel at graph origin
-        self.yMax = 315 # pixel length of y axis #315
-        self.xMax = 465 # pixel length of x axis #465
-        '''
-        
         #Grab Args
         #self.args=args
         self.kwargs=kwargs
@@ -71,70 +59,9 @@ class DataWindow(threading.Thread):
         #make a bunch of containers
         self.containers = load_layout("test_script.txt", self)
         
-        '''
-        # initialize data fields
-        self.altData = DataField(self.window, Point(350,75), "(m)", 
-                                 "Altitude: ", 32, ("ACL1",))
-        self.speedData = DataField(self.window, Point(780,30), "(m/s)",
-                                   "Speed: ",15,("ACL1",))
-        self.acclData = DataField(self.window, Point(1050,30), "(m/s^2)",
-                                  "Y-Accel: ",15,("ACL1",))
-        
-        #init temperature objects
-        self.aTempData = DataWithBar(self.window, Point(950,200), 
-                                     "*C",Point(750,190),Point(1150,210), 
-                                     aTempMax, "green", "Temp A: ", ("TEM1",))
-        
-        self.bTempData = DataWithBar(self.window, Point(950,250), 
-                                     "*C",Point(750,240),Point(1150,260), 
-                                     bTempMax, "red", "Temp B: ", ("TEM2",))
-        
-        self.cTempData = DataWithBar(self.window, Point(950,300), 
-                                     "*C",Point(750,290),Point(1150,310), 
-                                     cTempMax, "pink", "Temp C: ",("TEM3",))
-        
-        #makes a pressure bar graph
-        self.press = DataWithBar(self.window,Point(975,100),"(tor)",
-                                 Point(775,90), Point(1175,110),pressMax, 
-                                 "blue", "Pressure: ", ("PRE1",), 1)
-        
-
-        
-        # Make the altitude graph (which is actually acceleration rn)
-        self.altGraph = Graph(self.window, Point(75,525), self.yMax, self.xMax, 
-                              self.currentAltMax, self.currentTMax, "blue", 
-                              "Time", "Alt", ("ACL1",))
-        
-        
-        #graph container
-        container1 = Container(self, Point(5, 150), 600, 445)
-        container1.add(self.altGraph)
-        #temperature container
-        container2 = Container(self, Point(610, 155), 580, 190)
-        container2.add(self.aTempData)
-        container2.add(self.bTempData)
-        container2.add(self.cTempData)
-        #pressure and readings container
-        container3 = Container(self, Point(610, 5), 580, 140)
-        container3.add(self.press)
-        container3.add(self.acclData)
-        container3.add(self.speedData)
-        #altitude container
-        container4 = Container(self, Point(5,5), 600, 140)
-        container4.add(self.altData)
-        
-        #add the containers
-        self.containers.append(container1);
-        self.containers.append(container2);
-        self.containers.append(container3);
-        self.containers.append(container4);
-        '''
-        
         #Thread events
         self.running = threading.Event()
         self.paused = threading.Event()
-        
-        
         
     def run(self):
         self.running.set()
@@ -167,16 +94,14 @@ class DataWindow(threading.Thread):
             while time_mod.time() - timeStart < sampleTime:
                 time_mod.sleep(0.03)
             
-            #pauses runtime
+            #pauses runtime only checking the rm connection
             while self.paused.isSet():
                 time_mod.sleep(0.03)
+                parser.update()
             
             # updates GPS location of device and saves it as "location"
             
             #end of loop
-            
-        #close the input stream    
-        #inputData.close()    
         print("Exited Thread and Stopped")  
                
     def setUp(self): # sets up the static elements of the data display
@@ -227,8 +152,13 @@ def record(output, spacing, data):
     for d in data:
         output.write(str(d) + (spacing - len(str(d))) * " ")
     output.write("\n")
-    
+
 def load_layout(filepath, parent):
+    '''
+    Loads a layout for the screen from a layout file.
+    @param filepath: The file to be read
+    @param parent: The object with which to register the type calls
+    '''
     try:
         filehandler = open(filepath, "r")
     except:
