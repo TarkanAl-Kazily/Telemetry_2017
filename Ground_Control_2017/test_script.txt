@@ -10,8 +10,18 @@
 #add_vert_bar: CONTNAME TYPES MAX UNIT LABEL COLOR ORIGIN_X ORIGIN_Y LENGTH HEIGHT
 
 #add_hor_bar: CONTNAME TYPES MAX UNIT LABEL COLOR ORIGIN_X ORIGIN_Y LENGTH HEIGHT
-#add_field: CONTNAME TYPES TEXTSIZE LABEL ORIGIN_X ORIGIN_Y
+#add_field: CONTNAME TYPES TEXTSIZE UNIT TEXT ORIGIN_X ORIGIN_Y
 
-new_cont: c1 5 150 600 445
-add_graph: c1 (ACL1) Time Alt blue 75 525 100 200 5 1000
-add_hor_bar: c1 (TEM1) 400 deg_c test pink 150 200 100 20
+new_cont: lower_left 5 150 600 445
+add_graph: lower_left (ACL1) Time Alt blue 75 525 100 200 5 1000
+
+new_cont: lower_right 610 150 580 445
+add_vert_bar: lower_right (TEM1) 1000 deg_c temp_2ie blue 750 200 20 300
+add_vert_bar: lower_right (TEM2) 1000 deg_c temp_2ie tomato 900 190 15 310
+add_vert_bar: lower_right (TEM3) 1000 deg_c temp_2ie thistle 1050 210 25 290
+
+new_cont: upper_right 610 5 580 140
+add_hor_bar: upper_right (TEM1) 1000 deg_c Temp_1yy salmon 850 100 300 20
+
+new_cont: upper_left 5 5 600 140
+add_field: upper_left (ACL1) 15 mps^2 Accel 100 30

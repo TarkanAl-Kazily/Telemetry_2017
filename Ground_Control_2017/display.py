@@ -4,6 +4,7 @@ import math
 import threading
 import utility as util
 import heapq
+import colors
 
 # Do I need this???
 GraphWin = gw.GraphWin
@@ -250,7 +251,6 @@ def load_layout(filepath, parent):
         #check size == 2
         function = tokens[0]
         args = tokens[1].strip().split(' ')
-        print tokens
         
         #Python was crafted by Satan himself and
         #has no switch structure. Here instead is this bs
@@ -302,9 +302,19 @@ def add_vert_bar(args, cont_dict, window):
     if (len(args) != 10):
         print "Error: Illegal argument number."
         return
+    
+    if (len(args[4]) > 8):
+        print "Error: Bar name too long"
+        return
+    if (args[5] not in colors.COLORS):
+        print "Illegal color."
+        return
+        
     if (args[0] in cont_dict):
         container = cont_dict[args[0]]
-        
+        if (not check_bounds(make_rect(container.origin, container.max_x, container.max_y), 
+                     make_rect(Point(int(args[6]), int(args[7])),int(args[8]),int(args[9])))):
+            return
         #grab the type args
         types = (args[1])[1:-1]
         types = types.split(',')
@@ -316,7 +326,7 @@ def add_vert_bar(args, cont_dict, window):
         DataWithBar(window, 
                     Point(int(args[6]), int(args[7])), 
                     args[3], 
-                    Point(int(args[6])-100, int(args[7])-10), 
+                    Point(int(args[6]), int(args[7])), 
                     Point(int(args[6])+int(args[8]), int(args[7])+int(args[9])),
                     int(args[2]),
                     args[5], 
@@ -324,8 +334,19 @@ def add_vert_bar(args, cont_dict, window):
                     types, 1))
         
 def add_hor_bar(args, cont_dict, window):
+    '''
+    self.aTempData = DataWithBar(self.window, Point(950,200), 
+                                     "*C",Point(750,190),Point(1150,210), 
+                                     aTempMax, "green", "Temp A: ", ("TEM1",))
+    '''
     if (len(args) != 10):
         print "Error: Illegal argument number."
+        return
+    if (len(args[4]) > 8):
+        print "Error: Bar name too long"
+        return
+    if (args[5] not in colors.COLORS):
+        print "Illegal color."
         return
     if (args[0] in cont_dict):
         container = cont_dict[args[0]]
@@ -341,7 +362,7 @@ def add_hor_bar(args, cont_dict, window):
         DataWithBar(window, 
                     Point(int(args[6]), int(args[7])), 
                     args[3], 
-                    Point(int(args[6])-100, int(args[7])-10), 
+                    Point(int(args[6]), int(args[7])), 
                     Point(int(args[6])+int(args[8]), int(args[7])+int(args[9])),
                     int(args[2]),
                     args[5], 
@@ -349,7 +370,7 @@ def add_hor_bar(args, cont_dict, window):
                     types, 0))
 
 def add_field(args, cont_dict, window):
-    if (len(args) != 6):
+    if (len(args) != 7):
         print "Error: Illegal argument number."
         return
     if (args[0] in cont_dict):
@@ -360,13 +381,34 @@ def add_field(args, cont_dict, window):
         types = types.split(',')
         for string in types:
             string = string.strip()
-        
-        self.altData = DataField(self.window, Point(350,75), "(m)", 
-                                 "Altitude: ", 32, ("ACL1",))
+
         #Unsafe casting: Add checking
         container.add(
-        Graph(window, Point(int(args[4]), int(args[5])), 
-              args[3], int(args[2]), types))
+        DataField(window, Point(int(args[5]), int(args[6])), 
+              args[3], args[4],int(args[2]), types))
+        
+#returns true if rect_2 fits within rect_1
+def check_bounds(rect_1, rect_2):
+    x1 = rect_1.p1.x
+    x2 = rect_1.p2.x
+    x3 = rect_2.p1.x
+    x4 = rect_2.p2.x
+    y1 = rect_1.p1.y
+    y2 = rect_1.p2.y
+    y3 = rect_2.p1.y
+    y4 = rect_2.p2.y
+    if (x1 > x3 or x1 > x4):
+        return False
+    if (x2 < x3 or x2 < x4):
+        return False
+    if (y1 > y3 or y1 > y4):
+        return False
+    if (y2 < y3 or y2 < y4):
+        return False
+    return True
+
+def make_rect(origin, length, height):
+    return Rectangle(origin, Point(origin.x+length, origin.y+height))
 #-------------------------------------------------------------------------------
 #        CLASSES
 #-------------------------------------------------------------------------------
