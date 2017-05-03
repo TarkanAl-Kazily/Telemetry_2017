@@ -9,7 +9,7 @@
  * This program is part of the Data Diagnostics Telemetry system. It processes
  * data from the first serial port and transmits it using an RFM23BP board.
  * Additionally it logs the data it receives to a Micro SD card using a Sparkfun
- * OpenLog.
+ * OpenLog over Serial3.
  *
  * See the RadioHead libraries for documentation on how to use the RFM23BP.
  */
@@ -29,9 +29,9 @@
 #define SERVER_ADDRESS 2
 
 // The standard delay in milliseconds
-#define DELAY 300 
-// The period in milliseconds to transmit call sign
-#define CALL_FREQ 3000
+#define DELAY 250 
+// The period in milliseconds to transmit call sign - 600000 ms is 10 minutes
+#define CALL_FREQ 30000
 
 // Singleton instance of the radio driver
 RH_RF22 driver;
@@ -51,12 +51,19 @@ uint8_t data[RH_RF22_MAX_MESSAGE_LEN];
 // Prints an acknowledgement message
 void printAck(uint8_t from);
 
+// Logs a buffer to the SD card
+void logBuf(uint8_t *buf, int len);
+
+// Logs a string to the SD card
+void logMessage(char *msg);
+
 void setup() {
   Serial.begin(9600);
   DEBUG_MESSAGE(RH_RF22_MAX_MESSAGE_LEN);
   DEBUG_MESSAGE("\n");
-  if (!manager.init())
+  if (!manager.init()) {
     DEBUG_MESSAGE("init failed\n");
+  }
   // Defaults after init are 434.0MHz, 0.05MHz AFC pull-in, modulation FSK_Rb2_4Fd36
   Serial3.begin(9600);
   Serial3.print("Beginning test\r");
@@ -65,53 +72,28 @@ void setup() {
 
 void loop() {
   if (Serial.available() > 0) {
-    for (int i = 0; i < sizeof(data); i++) {
-      data[i] = 0;
-    }
+    // Read the data from the Serial port
     uint8_t result = Serial.readBytes((char*) data, sizeof(data));
-    DEBUG_MESSAGE("RESULT WAS : ");
-    DEBUG_MESSAGE(result);
-    DEBUG_MESSAGE("\n");
+    // If any data was read
     if (result != 0) {
-
-      // log incoming data
-      Serial3.write(data, result);
-      Serial3.write(13); // new line as int
-
-      DEBUG_MESSAGE("Sending to rf22_reliable_datagram_server\n");
-
-      // Send a message to manager_server
+      // log the data
+      logBuf(data, result);
+      // and send the data
       if (manager.sendtoWait(data, result, SERVER_ADDRESS)) {
-        // Now wait for a reply from the server
-        uint8_t len = sizeof(buf);
-        uint8_t from;
-        if (manager.recvfromAckTimeout(buf, &len, 2000, &from)) {
-          printAck(from);
-        } else {
-          DEBUG_MESSAGE("Yippie!\n");
-        }
+        logMessage("Acknowledged msg");
       } else {
-        DEBUG_MESSAGE("Did not recieve acknowledgement\n");
-        Serial3.print("Did not recieve acknowledgement\r");
+        logMessage("No ack on msg");
       }
-
       delay(DELAY);
     }
   }
 
   if (millis() - time > CALL_FREQ) {
-    DEBUG_MESSAGE("Sending callsign\n");
+    logMessage("Sending call");
     if (manager.sendtoWait(call, 10, SERVER_ADDRESS)) {
-      // Now wait for a reply from the server
-      uint8_t len = sizeof(buf);
-      uint8_t from;
-      if (manager.recvfromAckTimeout(buf, &len, 2000, &from)) {
-        printAck(from);
-      } else {
-        DEBUG_MESSAGE("She noticed me!\n");
-      }
+      logMessage("Acknowledged call");
     } else {
-      DEBUG_MESSAGE("Did not recieve acknowledgement\n");
+      logMessage("No ack on call");
     }
     time = millis();
     delay(DELAY);
@@ -121,8 +103,24 @@ void loop() {
 // Prints out to the serial port an acknowledgement message
 void printAck(uint8_t from) {
   DEBUG_MESSAGE("got reply from : 0x");
-  DEBUG_MESSAGE(from, HEX);
+  DEBUG_MESSAGE(from);
   DEBUG_MESSAGE(": ");
   DEBUG_MESSAGE((char*)buf);
-  DEBUG_MESSAGE("\n);
+  DEBUG_MESSAGE("\n");
+}
+
+void logBuf(uint8_t *buf, int len) {
+  Serial3.print(millis());
+  Serial3.print("ms:");
+  Serial3.write(buf, len);
+  Serial3.write(13);
+}
+
+void logMessage(char *msg) {
+  DEBUG_MESSAGE(msg);
+  DEBUG_MESSAGE("\n");
+  Serial3.print(millis());
+  Serial3.print("ms:");
+  Serial3.print(msg);
+  Serial3.write(13);
 }
