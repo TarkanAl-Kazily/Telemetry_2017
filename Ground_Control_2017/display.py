@@ -215,6 +215,11 @@ def add_graph(args, cont_dict, window):
         return
     if (args[0] in cont_dict):
         container = cont_dict[args[0]]
+        '''
+        if (not check_bounds(make_rect(container.origin, container.max_x, container.max_y), 
+                     make_rect(Point(int(args[5]), int(args[6])),int(args[7]),int(args[8])))):
+            return
+        '''
         
         #grab the type args
         types = (args[1])[1:-1]
@@ -280,6 +285,9 @@ def add_hor_bar(args, cont_dict, window):
         return
     if (args[0] in cont_dict):
         container = cont_dict[args[0]]
+        if (not check_bounds(make_rect(container.origin, container.max_x, container.max_y), 
+                     make_rect(Point(int(args[6]), int(args[7])),int(args[8]),int(args[9])))):
+            return
         
         #grab the type args
         types = (args[1])[1:-1]
