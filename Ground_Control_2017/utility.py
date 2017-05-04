@@ -36,6 +36,7 @@ class Parser():
             print "Going into file mode"
             #TESTING FOR NOW
             self.input = open(inputFile, "r")
+            self.ser.close()
             #raise IllegalSerialAccess("No serial port with name: " + portName)
         self.output = open(outputFile, "w")
         
@@ -50,7 +51,7 @@ class Parser():
             @raise IllegalStateException: if the serial port is not open 
         '''
         
-        if (self.ser.closed):
+        if (self.input.closed):
             #temp = self.ser.readline().strip()
             temp = self.ser.read_all().strip()
         else:
@@ -74,7 +75,7 @@ class Parser():
                     string = parsed_output[i]
                     #pass on empty strings
                     if (string != ''): 
-                        if len(string) == 4:
+                        if len(string) == 1:
                             type = string
                             measurement = (parsed_output[i+1], timestamp)
                             if not self.dataDict.has_key(type):
@@ -139,6 +140,8 @@ class Parser():
             #should fix bad inputs in the future and try to 
             #salvage something from data
             pass
+        if (parsed_string != None):
+            print parsed_string
             
         return parsed_string
 
