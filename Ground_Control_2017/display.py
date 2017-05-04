@@ -26,7 +26,9 @@ bTempMax = 50
 cTempMax = 500
 pressMax = 1000
 sampleTime = 0.5 # time between samples in seconds
-portName = "COM5"
+
+
+portName = "COM3"
 location = [0.0,0.0] # GPS location of device
 #Container box buffer
 buffer = 5
