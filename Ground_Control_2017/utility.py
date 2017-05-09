@@ -6,6 +6,9 @@ import time
 baudrate=115200
 inputFile = "sample_input.txt"
 outputFile = "log.txt"
+regex = "![A-Z0-9]{1}:[-.0-9]+;"
+#"![A-Z0-9]{1}:[.0-9]+;"
+#use re.findall to split input strings
 
 class Parser():
     
@@ -32,11 +35,13 @@ class Parser():
         try:
             self.ser = Serial(portName, timeout=2, baudrate=baudrate) #open serial port
             self.ser.reset_input_buffer()
+            self.is_open = True
         except:
             print "Going into file mode"
             #TESTING FOR NOW
             self.input = open(inputFile, "r")
             self.ser.close()
+            self.is_open = False
             #raise IllegalSerialAccess("No serial port with name: " + portName)
         self.output = open(outputFile, "w")
         
@@ -51,16 +56,13 @@ class Parser():
             @raise IllegalStateException: if the serial port is not open 
         '''
         
-        if (self.input.closed):
-            #temp = self.ser.readline().strip()
+        if (self.is_open):
             temp = self.ser.read_all().strip()
         else:
             temp = self.input.readline().strip()
         
         timestamp = time.time()
-
-        print temp
-            
+        
         if len(temp) > 0 :
             #write input to output file
             self.output.write(temp +"\n")
@@ -70,42 +72,25 @@ class Parser():
             parsed_output = self.parse_string_multiple(temp)
             
             if parsed_output != None:
-                i = 0
-                while i < len(parsed_output):
-                    string = parsed_output[i]
-                    #pass on empty strings
-                    if (string != ''): 
-                        if len(string) == 1:
-                            type = string
-                            measurement = (parsed_output[i+1], timestamp)
-                            if not self.dataDict.has_key(type):
-                                #add empty queue of new data type
-                                temp = {type : deque([])}
-                                self.dataDict.update(temp)
-                            #Add the measurement to the queue
-                            self.add_to_queue(type, measurement)
-                            i += 1
-                    
-                    i += 1
-                
-            #OLD CODE FOR 1 val at a time
-            '''
-            type, measurement = self.parse_string(temp)
-            print type
-            print measurement
-            
-            #@todo: check for consistency in types and measurements
-            
-            if not self.dataDict.has_key(type):
-                temp = {type : deque([])}
-                self.dataDict.update(temp)
-                
-            self.add_to_queue(type, measurement)
-            '''
-            
+                for data_string in parsed_output:
+                    assert(data_string[0] == '!')
+                    assert(data_string[-1] == ';')
+                    #take away the side markers 
+                    data_string = re.sub('[!;]', '', data_string)
+                    vals = data_string.split(':')
+                    type = vals[0]
+                    #create a tuple of the data type and the timestamp
+                    measurement = (vals[1], timestamp)
+                    if not self.dataDict.has_key(type):
+                        #add empty queue of new data type
+                        temp = {type : deque([])}
+                        self.dataDict.update(temp)
+                    #Add the measurement to the queue
+                    self.add_to_queue(type, measurement)
+
     def isEmpty(self, queue):
         return len(queue) == 0
-        
+
     def parse_string(self, string): 
         '''
             Parses string of data
@@ -117,32 +102,24 @@ class Parser():
         #Should check for multiple data points?
         type, measurement = string.strip().split(":")
         return type[1:], measurement[:-1]
-    
+
     def parse_string_multiple(self, string):
         '''
             Parses an input of the correct format into a list
             of data types and values
-            @todo: do a lot more error checking on inputs
+            @requires string is not None
             @param takes in a string of multiple data values which are 
-            concatenated and of the form !XXXX:DATAXXXXX;
+            concatenated and of the form !X:DATAXXXXX;
             @return: A even list of strings with even indices corresponding
             to a data type and odd indices as float data values. Returns
             None if no usable data points could be parsed
         '''
-        
         string = string.strip()
-        parsed_string = None
-        
-        #Check that string is correct length
-        if (len(string) % 16 == 0):
-            parsed_string = re.split('[!;:]*', string)
-        else:
-            #should fix bad inputs in the future and try to 
-            #salvage something from data
-            pass
-        if (parsed_string != None):
-            print parsed_string
-            
+        parsed_string = re.findall(regex, string)
+
+        if (parsed_string == []):
+            return None
+
         return parsed_string
 
     def add_to_queue(self, dataType, value):
@@ -151,29 +128,28 @@ class Parser():
             @param: takes in the name of the queue to be added to and a value
             @modifies: if the queueName is not None and is not in the dictionary 
             of queues, add it to the dictionary and update;
-            @todo: edit to only accept correct vals? 
         '''
-        self.dataDict.get(dataType).append(value)
-        self.dataItemsAvailable += 1
-    
+        if (value != None):
+            self.dataDict.get(dataType).append(value)
+            self.dataItemsAvailable += 1
+
     def is_available(self):
         '''
             Says whether or not a queue has at least on element available
             @return: returns a boolean indicating whether or not any of the 
             queues in the dictionary contain at least one value
         '''
-        
         return self.dataItemsAvailable > 0
-        
+
     def get(self, dataType):
         '''
-            @todo: do error checking on the data type
             Gets the first value in the queue of the given Name
             @param: takes in the name of a data type for which the user wants
             to receive data.
             @return: if the name is not None and is in the dictionary, returns
             the first value in the queue converted to a float if there exists 
             one. Otherwise, return None
+            @deprecated: Use get_data_tuple instead.
         '''
         if (self.dataDict.get(dataType) == None or 
             self.isEmpty(self.dataDict.get(dataType))):
@@ -183,10 +159,9 @@ class Parser():
             self.dataItemsAvailable -= 1
                 
             return float(data[0])
-        
+
     def get_data_tuple(self, dataType):
         '''
-            @todo: do error checking on the data type
             Gets the first value in the queue of the given Name
             @param: takes in the name of a data type for which the user wants
             to receive data.
@@ -200,9 +175,8 @@ class Parser():
         else:
             data = self.dataDict.get(dataType).pop()
             self.dataItemsAvailable -= 1
-                
             return data
-        
+
 class IllegalSerialAccess(Exception):   
     '''
         Exception for when the serial port is incorrectly named.
