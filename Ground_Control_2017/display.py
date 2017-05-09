@@ -82,7 +82,7 @@ class DataWindow(threading.Thread):
                 #see if new data came in
                 for key in self.types_to_objects.keys():
                     data = parser.get_data_tuple(key)
-                    
+                    print str(data) + " " + key
                     if data != None:
                         doota = float(data[0])
                         data_time = data[1]
@@ -95,6 +95,8 @@ class DataWindow(threading.Thread):
                 print("TIME! " + str(round(time_mod.time() - timeStart, 3)))
             while time_mod.time() - timeStart < sampleTime:
                 time_mod.sleep(0.03)
+                
+            print ""
             
             #pauses runtime only checking the rm connection
             while self.paused.isSet():
@@ -356,7 +358,7 @@ def make_rect(origin, length, height):
 #A class for holding other items, orienting them, and printing them
 #Used for eventual automatic display of elements on the screen which
 #organizes items in boxes on the screen.
-#CAN ALSO BE USED FOR DTECTING WHEN A GROUP OF ITEMS ARE SELECTED
+#CAN ALSO BE USED FOR DETECTING WHEN A GROUP OF ITEMS ARE SELECTED
 class Container(object):    
     def __init__(self, parent, position=Point(0,0), max_length=0, max_height=0, ):
         #the Items in this containers
@@ -526,26 +528,30 @@ class Graph:
     def update(self, data, time): # takes a data point and redraws the graph
         if len(self.points) == 0:
             self.points.append(Point(0, data * self.yLength / self.currentYMax))
+            self.oldTime = time
+            self.init_time = time
             #self.oldTime = time_mod.time()
         else: 
             self.points.append(Point(self.points[-1].getX() + self.tLength * 
-                                     (time - self.time) / 
+                                     (time - self.init_time) / 
                                      self.currentTMax, 
                                      data * self.yLength / self.currentYMax))
+            
+        print str(time) + " " + str(data)
             #self.oldTime = time_mod.time()
         self.time = time
-        
         doRedraw = False
-        while(data > self.currentYMax or data < - self.currentYMax):
+        
+        while(data > self.currentYMax or data < (-1 * self.currentYMax)):
             doRedraw = True
             oldMax = self.currentYMax
             # extends y-axis  by 1.5 each time max data 
             # is reached (change later?)
             self.currentYMax  = self.currentYMax * 1.5
-            for i in range(0,len(self.points)):
+            for i in range(0, len(self.points)):
                 self.points[i] = Point(self.points[i].getX(), 
-                                       self.points[i].getY() * oldMax / 
-                                       self.currentYMax)
+                                       self.points[i].getY() * (float(oldMax) / 
+                                       self.currentYMax))
                 
         while self.points[-1].getX() > self.tLength:
             doRedraw = True
@@ -554,7 +560,7 @@ class Graph:
             # is reached (change later?)
             self.currentTMax += 10
             for i in range(0,len(self.points)):
-                self.points[i] = Point(self.points[i].getX() * oldMax / 
+                self.points[i] = Point(self.points[i].getX() * (float(oldMax)) / 
                                        self.currentTMax, self.points[i].getY())
         if doRedraw:
             self.redraw() # redraws all points and lines
@@ -572,10 +578,7 @@ class Graph:
                 self.displayLines.append(l)
                 oldP = p
         
-        '''
-        @todo: make update only work if values need it.
-        @todo: implement resizing
-        '''
+        #update the bounds
         new_bounds = self.getAxisValues()
         self.x_bounds.setText(new_bounds[1])
         self.y_bounds.setText(new_bounds[0])
@@ -588,7 +591,6 @@ class Graph:
     def getAxisValues(self):
         return (self.currentYMax, self.currentTMax)
     
-
     # Helps update method.
     def redraw(self):
         for p in self.displayPoints:
