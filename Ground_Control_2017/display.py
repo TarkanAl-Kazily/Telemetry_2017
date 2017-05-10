@@ -36,13 +36,6 @@ buffer = 5
 # initialize output
 #output = open(outputFile, "a")
 
-#initialize parser
-parser = util.Parser()
-try:
-    parser.open_port(portName)
-except:
-    print "No serial connected with "+ portName
-
 class DataWindow(threading.Thread):
     def __init__(self, group=None, target=None, name=None,
                  args=(), kwargs=None, verbose=None):
@@ -61,6 +54,10 @@ class DataWindow(threading.Thread):
         #make a bunch of containers
         self.containers = load_layout("test_script.txt", self)
         
+        #initialize parser
+        self.parser = util.Parser()
+        self.parser.open_port(portName)
+        
         #Thread events
         self.running = threading.Event()
         self.paused = threading.Event()
@@ -74,16 +71,18 @@ class DataWindow(threading.Thread):
             timeStart = time_mod.time()
             
             #updates new data points
-            parser.update()
+            self.parser.update()
             
             #get data from parser and apply it
-            if (parser.is_available()): 
+            if (self.parser.is_available()): 
                 #for each available data type, check to 
                 #see if new data came in
                 for key in self.types_to_objects.keys():
-                    data = parser.get_data_tuple(key)
+                    data = self.parser.get_data_tuple(key)
                     print str(data) + " " + key
                     if data != None:
+                        #doota is a legitimate name for a
+                        #variable, TODD MEARGLE!
                         doota = float(data[0])
                         data_time = data[1]
                         #update all the items linked to this data type
@@ -101,11 +100,12 @@ class DataWindow(threading.Thread):
             #pauses runtime only checking the rm connection
             while self.paused.isSet():
                 time_mod.sleep(0.03)
-                parser.update()
+                self.parser.update()
             
             # updates GPS location of device and saves it as "location"
             
             #end of loop
+        self.parser.close()
         print("Exited Thread and Stopped")  
                
     def setUp(self): # sets up the static elements of the data display
@@ -198,6 +198,20 @@ def load_layout(filepath, parent):
             add_hor_bar(args, cont_dict, parent.window)
         elif (function == 'add_field'):
             add_field(args, cont_dict, parent.window)
+        elif (function == 'change_port'):
+            if (len(args) != 1):
+                print "Illegal argument number for port change"
+                continue
+            parent.parser.open_port(args[0])
+        elif (function == 'change_baudrate'):
+            if (len(args) != 1):
+                print "Illegal argument number for Baudrate" \
+                " expected 1 but got " + str(len(args))
+                continue
+            try:
+                parent.parser.change_baudrate(int(args[0]))
+            except:
+                print args[0] + " cannot be converted to int"
         else:
             print "Error command "+function+" cannot be determined"
     
@@ -241,7 +255,6 @@ def add_vert_bar(args, cont_dict, window):
     if (len(args) != 10):
         print "Error: Illegal argument number."
         return
-    
     if (len(args[4]) > 8):
         print "Error: Bar name too long"
         return
@@ -506,6 +519,8 @@ class Graph:
         self.yLength = yLength #y axis height
         self.tLength = tLength  # x- axis width
         self.graphicsFactor = 4.8 # the higher, the sooner the lines stop rendering. 5 causes no initial lag
+        self.initYMax = initYMax
+        self.initTMax = initTMax
         self.currentYMax = initYMax
         self.currentTMax = initTMax
         self.color = color # color of the lines and points
@@ -523,6 +538,8 @@ class Graph:
         self.y_bounds = Text(Point(origin.getX()-30, 
                                    origin.getY()-self.yLength*self.nib_const-20), 
                                    "READY") #displays the y bounds
+        self.x_scale_factor = 1
+        self.y_scale_factor = 1
 
     # adds a data point and redraws graph
     def update(self, data, time): # takes a data point and redraws the graph
@@ -531,12 +548,18 @@ class Graph:
             self.oldTime = time
             self.init_time = time
             #self.oldTime = time_mod.time()
-        else: 
+        else:
+            ''' 
             self.points.append(Point(self.points[-1].getX() + self.tLength * 
                                      (time - self.init_time) / 
                                      self.currentTMax, 
                                      data * self.yLength / self.currentYMax))
-            
+            '''
+            self.points.append(Point(self.points[-1].getX() + self.tLength * 
+                                    ((time - self.init_time) / 
+                                     self.currentTMax) * self.x_scale_factor, 
+                                     data * (self.yLength / self.currentYMax) *
+                                     self.y_scale_factor))
         print str(time) + " " + str(data)
             #self.oldTime = time_mod.time()
         self.time = time
@@ -544,24 +567,29 @@ class Graph:
         
         while(data > self.currentYMax or data < (-1 * self.currentYMax)):
             doRedraw = True
-            oldMax = self.currentYMax
             # extends y-axis  by 1.5 each time max data 
             # is reached (change later?)
             self.currentYMax  = self.currentYMax * 1.5
+            old_sf = self.y_scale_factor
+            self.y_scale_factor = self.initYMax / self.currentYMax
+            
             for i in range(0, len(self.points)):
                 self.points[i] = Point(self.points[i].getX(), 
-                                       self.points[i].getY() * (float(oldMax) / 
-                                       self.currentYMax))
+                                       self.points[i].getY() * (1/old_sf) * 
+                                       self.y_scale_factor)
                 
         while self.points[-1].getX() > self.tLength:
             doRedraw = True
-            oldMax = self.currentTMax
             # extends t-axis 10 seconds each time the max time 
             # is reached (change later?)
             self.currentTMax += 10
+            old_sf = self.x_scale_factor
+            self.x_scale_factor = float(self.initTMax) / self.currentTMax
+            assert(self.x_scale_factor < old_sf)
+            
             for i in range(0,len(self.points)):
-                self.points[i] = Point(self.points[i].getX() * (float(oldMax)) / 
-                                       self.currentTMax, self.points[i].getY())
+                self.points[i] = Point(self.points[i].getX() * (1/old_sf) * 
+                                       self.x_scale_factor, self.points[i].getY())
         if doRedraw:
             self.redraw() # redraws all points and lines
         else: # draw new point only
@@ -599,7 +627,7 @@ class Graph:
             l.undraw()
         newPoints = []
         for i in range(0,len(self.points)):
-            p = Point(self.origin.getX() + self.points[i].getX(),self.origin.getY() - self.points[i].getY())
+            p = Point(self.origin.getX() + self.points[i].getX(), self.origin.getY() - self.points[i].getY())
             p.setFill(self.color)
             newPoints.append(p)
         self.displayPoints =  newPoints

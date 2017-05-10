@@ -22,7 +22,7 @@ class Parser():
         self.ser = Serial()
         self.dataItemsAvailable = 0
         self.dataDict = dict
-        
+
     def open_port(self, portName):
         '''
         Opens serial port which was initialized with given name
@@ -47,7 +47,7 @@ class Parser():
         
         #returns whether or not the port is open
         return self.ser.isOpen()
-    
+
     def update(self):
         '''
             Checks If data is waiting in the serial port
@@ -88,7 +88,7 @@ class Parser():
                     #Add the measurement to the queue
                     self.add_to_queue(type, measurement)
 
-    def isEmpty(self, queue):
+    def is_empty(self, queue):
         return len(queue) == 0
 
     def parse_string(self, string): 
@@ -152,7 +152,7 @@ class Parser():
             @deprecated: Use get_data_tuple instead.
         '''
         if (self.dataDict.get(dataType) == None or 
-            self.isEmpty(self.dataDict.get(dataType))):
+            self.is_empty(self.dataDict.get(dataType))):
             return None
         else:
             data = self.dataDict.get(dataType).pop()
@@ -170,12 +170,24 @@ class Parser():
             Otherwise, return None
         '''
         if (self.dataDict.get(dataType) == None or 
-            self.isEmpty(self.dataDict.get(dataType))):
+            self.is_empty(self.dataDict.get(dataType))):
             return None
         else:
             data = self.dataDict.get(dataType).pop()
             self.dataItemsAvailable -= 1
             return data
+
+    def close(self):
+        if (self.is_open):
+            self.ser.close()
+        else:
+            try:
+                self.input.close()
+            except:
+                print "Error closing filestream"
+
+    def change_baudrate(self, new_rate):
+        self.ser.baudrate(new_rate)
 
 class IllegalSerialAccess(Exception):   
     '''
