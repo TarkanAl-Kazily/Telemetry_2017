@@ -36,6 +36,8 @@ class Parser():
             self.ser = Serial(portName, timeout=2, baudrate=baudrate) #open serial port
             self.ser.reset_input_buffer()
             self.is_open = True
+            if (not self.input.closed):
+                self.input.close()
         except:
             print "Going into file mode"
             #TESTING FOR NOW
