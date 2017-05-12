@@ -3,7 +3,7 @@ from serial import Serial
 from collections import deque
 import re
 import time
-baudrate=9600
+baudrate=115200
 inputFile = "sample_input.txt"
 outputFile = "log.txt"
 regex = "![A-Z0-9]{1}:[-.0-9]+;"
@@ -16,6 +16,8 @@ class Parser():
     #contains a serial object for receiving 
     #data from the radio module
     def __init__(self, dict={}):
+        
+        #self.ser._baudrate=115200
         #number of items left in queue
         self.ser = Serial()
         self.dataItemsAvailable = 0
@@ -33,14 +35,18 @@ class Parser():
         try:
             self.ser = Serial(portName, timeout=2, baudrate=baudrate) #open serial port
             self.ser.reset_input_buffer()
+            self.is_open = True
+            if (not self.input.closed):
+                self.input.close()
         except:
-            self.ser = Serial()
-            print "Could not open serial on port " + portName
-            
-        try:
-            self.output = open(outputFile, "w")
-        except:
-            print "IOEXCEPTION"
+            print "Going into file mode"
+            #TESTING FOR NOW
+            self.input = open(inputFile, "r")
+            self.ser.close()
+            self.is_open = False
+            #raise IllegalSerialAccess("No serial port with name: " + portName)
+        self.output = open(outputFile, "w")
+        
         #returns whether or not the port is open
         return self.ser.isOpen()
 
@@ -52,12 +58,10 @@ class Parser():
             @raise IllegalStateException: if the serial port is not open 
         '''
         
-        if (not self.ser.isOpen()):
-            raise ValueError("Serial port is not open for reading")
-            #Should this throw an excpetion?
-            return
-        
-        temp = self.ser.read_all().strip()
+        if (self.is_open):
+            temp = self.ser.read_all().strip()
+        else:
+            temp = self.input.readline().strip()
         
         timestamp = time.time()
         
@@ -176,15 +180,13 @@ class Parser():
             return data
 
     def close(self):
-        print "Clean Up"
-        try:
+        if (self.is_open):
             self.ser.close()
-        except:
-            print "Serial is not open"
-        try:
-            self.output.close()
-        except:
-            print "Output is not open"
+        else:
+            try:
+                self.input.close()
+            except:
+                print "Error closing filestream"
 
     def change_baudrate(self, new_rate):
         self.ser.baudrate(new_rate)
