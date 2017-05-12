@@ -29,13 +29,13 @@ RHReliableDatagram manager(driver, SERVER_ADDRESS);
 void setup() 
 {
   Serial.begin(9600);
+  delay(2000);
   if (!manager.init())
     Serial.println("init failed");
   // Defaults after init are 434.0MHz, 0.05MHz AFC pull-in, modulation FSK_Rb2_4Fd36
   DEBUG_MESSAGE(RH_RF22_MAX_MESSAGE_LEN);
 }
 
-uint8_t data[] = "Recieved";
 // Dont put this on the stack:
 uint8_t buf[RH_RF22_MAX_MESSAGE_LEN];
 
@@ -49,11 +49,12 @@ void loop()
     if (manager.recvfromAck(buf, &len, &from))
     {
       DEBUG_MESSAGE("got request from : 0x");
-      DEBUG_MESSAGE(from, HEX);
+      DEBUG_MESSAGE(from);
       DEBUG_MESSAGE(": ");
       Serial.write(buf, len);
       Serial.write('\n');
     }
   }
+  delay(100);
 }
 
