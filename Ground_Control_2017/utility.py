@@ -63,7 +63,7 @@ class Parser():
         
         if len(temp) > 0 :
             #write input to output file
-            self.output.write(temp +"\n")
+            self.output.write(temp + " " + time.asctime(time.localtime()) + "\n")
             self.output.flush()
             
             #Parse the input
