@@ -83,10 +83,10 @@ void setup() {
   // Defaults after init are 434.0MHz, 0.05MHz AFC pull-in, modulation FSK_Rb2_4Fd36
   driver.setFrequency(TRANSMIT_FREQ);
   driver.setTxPower(TRANSMIT_POWER);
+
   Serial3.begin(9600);
   Serial3.print("Beginning test\r");
   time = millis();
-
 }
 
 void loop() {
