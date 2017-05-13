@@ -20,7 +20,7 @@
 
 // Define a debug macro if the DEBUG tag was set during compilation
 #ifdef DEBUG
-#define DEBUG_MESSAGE(x) Serial.print(x)
+#define DEBUG_MESSAGE(x)
 #else
 #define DEBUG_MESSAGE(x)
 #endif
@@ -32,6 +32,9 @@
 #define DELAY 250 
 // The period in milliseconds to transmit call sign - 600000 ms is 10 minutes
 #define CALL_FREQ 30000
+
+#define TRANSMIT_FREQ 434.0
+#define TRANSMIT_POWER RH_RF22_RF23BP_TXPOW_30DBM
 
 // Singleton instance of the radio driver
 RH_RF22 driver;
@@ -58,20 +61,25 @@ void logBuf(uint8_t *buf, int len);
 void logMessage(char *msg);
 
 void setup() {
-  Serial.begin(9600);
   DEBUG_MESSAGE(RH_RF22_MAX_MESSAGE_LEN);
   DEBUG_MESSAGE("\n");
+
   if (!manager.init()) {
-    DEBUG_MESSAGE("init failed\n");
+    // Init failed
+    logMessage("Init failed");
+    while (1);
   }
+
   // Defaults after init are 434.0MHz, 0.05MHz AFC pull-in, modulation FSK_Rb2_4Fd36
+  driver.setFrequency(TRANSMIT_FREQ);
+  driver.setTxPower(TRANSMIT_POWER);
   Serial3.begin(9600);
   Serial3.print("Beginning test\r");
   time = millis();
 }
 
 void loop() {
-  if (Serial.available() > 0) {
+  if (Serial1.available() > 0) {
     // Read the data from the Serial port
     uint8_t result = Serial.readBytes((char*) data, sizeof(data));
     // If any data was read

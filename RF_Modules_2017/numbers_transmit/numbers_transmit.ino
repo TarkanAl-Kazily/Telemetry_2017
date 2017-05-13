@@ -26,11 +26,16 @@
 #define SERVER_ADDRESS 2
 
 // The standard delay in milliseconds
-#define DELAY 100 
+#define DELAY 250 
 // The period in milliseconds to transmit call sign - 600000 ms is 10 minutes
 #define CALL_FREQ 300000
 
 #define DATA_BAUD 115200
+
+#define TRANSMIT_FREQ 434.0
+#define TRANSMIT_POWER RH_RF22_RF23BP_TXPOW_30DBM
+
+#define LED 3
 
 // Singleton instance of the radio driver
 RH_RF22 driver;
@@ -62,15 +67,23 @@ void makeCountBuf(uint8_t buf[]);
 unsigned int count = 0;
 
 void setup() {
-  Serial.begin(9600);
-  DEBUG_MESSAGE(RH_RF22_MAX_MESSAGE_LEN);
-  DEBUG_MESSAGE("\n");
-  delay(2000);
-  Serial.println("FINISHED DELAY");
+  pinMode(LED, OUTPUT);
+  for (int i=0 ; i < 5; i++) {
+    digitalWrite(LED, HIGH);
+    delay(500);
+    digitalWrite(LED, LOW);
+    delay(500);
+  }
+
   if (!manager.init()) {
-    DEBUG_MESSAGE("init failed\n");
+    // Init failed
+    digitalWrite(LED, HIGH);
+    while (1);
   }
   // Defaults after init are 434.0MHz, 0.05MHz AFC pull-in, modulation FSK_Rb2_4Fd36
+  driver.setFrequency(TRANSMIT_FREQ);
+  driver.setTxPower(TRANSMIT_POWER);
+
   Serial3.begin(9600);
   Serial3.print("Beginning test\r");
   time = millis();
@@ -83,23 +96,30 @@ void loop() {
   }
   
   makeCountBuf(data);
-  Serial.write(data, 12);
   logBuf(data, 12);
+
+  digitalWrite(LED, HIGH);
 
   // Send message as a broadcast - do not block for a confirmation
   if (manager.sendtoWait(data, 12, RH_BROADCAST_ADDRESS)) {
     logMessage("Sent msg");
   } 
+  
+  digitalWrite(LED, LOW);
 
   delay(DELAY);
 
   if (millis() - time > CALL_FREQ) {
     logMessage("Sending call");
+    digitalWrite(LED, HIGH);
     if (manager.sendtoWait(call, 10, RH_BROADCAST_ADDRESS)) {
       logMessage("Acknowledged call");
     } else {
       logMessage("No ack on call");
     }
+    digitalWrite(LED, LOW);
+    time = millis();
+    delay(DELAY);
   }
 }
 
@@ -111,8 +131,6 @@ void logBuf(uint8_t *buf, int len) {
 }
 
 void logMessage(char *msg) {
-  DEBUG_MESSAGE(msg);
-  DEBUG_MESSAGE("\n");
   Serial3.print(millis());
   Serial3.print("ms:");
   Serial3.print(msg);
