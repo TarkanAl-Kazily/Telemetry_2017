@@ -1,29 +1,4 @@
-#Include hash on a line to have it be echoed to console rather than parsed
-#This document describes the form for defining a display's setup
-#
-# Note, All types should be in cartesian format i.e.
-# (type_1, type_2, type_3) 
-#
-#Commands:
-#new_cont: CONTNAME ORIGIN_X ORIGIN_Y LENGTH HEIGHT
-#add_graph: CONTNAME TYPES X_LABEL Y_LABEL COLOR ORIGIN_X ORIGIN_Y LENGTH HEIGHT MAX_X MAX_Y
-#add_vert_bar: CONTNAME TYPES MAX UNIT LABEL COLOR ORIGIN_X ORIGIN_Y LENGTH HEIGHT
-#add_hor_bar: CONTNAME TYPES MAX UNIT LABEL COLOR ORIGIN_X ORIGIN_Y LENGTH HEIGHT
-#add_field: CONTNAME TYPES TEXTSIZE UNIT TEXT ORIGIN_X ORIGIN_Y
-#change_port: PORTNAME
-#change_baudrate: BAUDRATE
-
-new_cont: lower_left 5 150 600 445
-add_graph: lower_left (A) Time Alt blue 75 525 250 400 5 1000
-
-new_cont: lower_right 610 150 580 445
-add_vert_bar: lower_right (A) 1000 deg_c temp_2ie blue 750 200 20 300
-add_vert_bar: lower_right (B) 1000 deg_c temp_2ie tomato 900 190 15 310
-add_vert_bar: lower_right (C) 1000 deg_c temp_2ie thistle 1050 210 25 290
-
-new_cont: upper_right 610 5 580 140
-add_hor_bar: upper_right (D) 1000 deg_c Temp_1yy salmon 850 100 300 20
-
-new_cont: upper_left 5 5 600 140
-add_field: upper_left (E) 15 mps^2 Accel 100 30
-add_hor_bar: upper_left (D) 1000 mps test red 100 100 100 20
+new_cont: main 5 5 500 500
+add_field: main (A) 18 counts test 100 100
+change_port: COM3
+change_baudrate: 9600

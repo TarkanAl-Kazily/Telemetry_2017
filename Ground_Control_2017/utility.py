@@ -116,6 +116,7 @@ class Parser():
         parsed_string = re.findall(regex, string)
 
         if (parsed_string == []):
+            print string
             return None
 
         return parsed_string
@@ -187,7 +188,7 @@ class Parser():
             print "Output is not open"
 
     def change_baudrate(self, new_rate):
-        self.ser.baudrate(new_rate)
+        self.ser.baudrate = new_rate
 
 class IllegalSerialAccess(Exception):   
     '''

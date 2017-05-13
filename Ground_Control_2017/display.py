@@ -182,7 +182,9 @@ def load_layout(filepath, parent):
             continue
         
         tokens = f.split(':')
-        #check size == 2
+        if (len(tokens) != 2):
+            print tokens
+            continue
         function = tokens[0]
         args = tokens[1].strip().split(' ')
         
@@ -212,7 +214,7 @@ def load_layout(filepath, parent):
             try:
                 parent.parser.change_baudrate(int(args[0]))
             except:
-                print args[0] + " cannot be converted to int"
+               print args[0].strip() + " cannot be converted to int"
         else:
             print "Error command "+function+" cannot be determined"
     
@@ -439,7 +441,7 @@ class DataField:
     #         window, x_start=0, y_start=0, name="default", size=15    
     def setUp(self):
         txt = Text(Point(self.location.getX() - len(self.text) * 
-                         self.text_size * 0.6, self.location.getY()), 
+                         self.text_size * 0.9, self.location.getY()), 
                          self.text) # Altitude text
         
         txt.setSize(self.text_size)
