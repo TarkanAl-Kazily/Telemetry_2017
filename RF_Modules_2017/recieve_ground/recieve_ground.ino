@@ -20,6 +20,11 @@
 #define CLIENT_ADDRESS 1
 #define SERVER_ADDRESS 2
 
+#define TRANSMIT_FREQ 434.0
+#define TRANSMIT_POWER RH_RF22_RF23BP_TXPOW_30DBM
+
+#define DELAY 100
+
 // Singleton instance of the radio driver
 RH_RF22 driver;
 
@@ -33,6 +38,8 @@ void setup()
   if (!manager.init())
     Serial.println("init failed");
   // Defaults after init are 434.0MHz, 0.05MHz AFC pull-in, modulation FSK_Rb2_4Fd36
+  driver.setFrequency(TRANSMIT_FREQ);
+  driver.setTxPower(TRANSMIT_POWER);
   DEBUG_MESSAGE(RH_RF22_MAX_MESSAGE_LEN);
 }
 
@@ -55,6 +62,5 @@ void loop()
       Serial.write('\n');
     }
   }
-  delay(100);
 }
 
