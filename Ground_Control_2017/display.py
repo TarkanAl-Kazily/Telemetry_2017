@@ -51,12 +51,12 @@ class DataWindow(threading.Thread):
         self.window = kwargs['window']
         self.types_to_objects = {}
         
-        #make a bunch of containers
-        self.containers = load_layout("test_script.txt", self)
-        
         #initialize parser
         self.parser = util.Parser()
-        self.parser.open_port(portName)
+        print "Serial is open: " + str(self.parser.open_port(portName))
+        
+        #make a bunch of containers
+        self.containers = load_layout("test_script.txt", self)
         
         #Thread events
         self.running = threading.Event()
@@ -202,6 +202,7 @@ def load_layout(filepath, parent):
             if (len(args) != 1):
                 print "Illegal argument number for port change"
                 continue
+            parent.parser.close()
             parent.parser.open_port(args[0])
         elif (function == 'change_baudrate'):
             if (len(args) != 1):

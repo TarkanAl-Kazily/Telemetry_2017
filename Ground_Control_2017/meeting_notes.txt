@@ -24,5 +24,4 @@ Cole:
 James: 
     Everything else
         associate data with time stamps of reception
-        convert to multithreading
         add more gui options

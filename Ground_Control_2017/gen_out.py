@@ -16,6 +16,5 @@ for i in range(0,99):
 			temp = str(temp * (1 + r.randint(0, 1) * -2))
 		else:
 			temp = str(temp)
-		
 			output.write("!"+tags[r.randint(0,4)]+":"+temp+";")
 	output.write('\n')
