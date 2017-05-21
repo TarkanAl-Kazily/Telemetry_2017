@@ -11,6 +11,8 @@
  * See the RadioHead libraries for documentation on how to use the RFM23BP.
  */
 
+/****************** BEGIN MACROS ******************/
+
 #include <RHReliableDatagram.h>
 #include <RH_RF22.h>
 #include <SPI.h>
@@ -37,6 +39,8 @@
 
 #define LED 3
 
+/****************** BEGIN VARIABLES ******************/
+
 // Singleton instance of the radio driver
 RH_RF22 driver;
 
@@ -46,12 +50,16 @@ RHReliableDatagram manager(driver, CLIENT_ADDRESS);
 // Dont put this on the stack:
 uint8_t buf[RH_RF22_MAX_MESSAGE_LEN];
 // The amateur radio call sign - MAKE SURE TO UPDATE THIS 
-uint8_t call[10] = {'[', 'K', 'I', '7', 'A', 'F', 'R', '-', '2', ']'};
+uint8_t call[10] = {'[', 'K', 'I', '7', 'A', 'F', 'R', '-', '3', ']'};
 // A counter to keep track of whether to send out call sign
 unsigned long time;
 
 // A buffer to send data from
 uint8_t data[RH_RF22_MAX_MESSAGE_LEN];
+
+unsigned int count = 0;
+
+/****************** BEGIN METHOD DECLARATIONS ******************/
 
 // Prints an acknowledgement message
 void printAck(uint8_t from);
@@ -62,9 +70,10 @@ void logBuf(uint8_t *buf, int len);
 // Logs a string to the SD card
 void logMessage(char *msg);
 
+// Fills the given buffer with the count variable in the desired format
 void makeCountBuf(uint8_t buf[]);
 
-unsigned int count = 0;
+/****************** BEGIN CODE ******************/
 
 void setup() {
   pinMode(LED, OUTPUT);
@@ -84,8 +93,9 @@ void setup() {
   driver.setFrequency(TRANSMIT_FREQ);
   driver.setTxPower(TRANSMIT_POWER);
 
+  // Begin serial port to data logger
   Serial3.begin(9600);
-  Serial3.print("Beginning test\r");
+  Serial3.println("Beginning test");
   time = millis();
 }
 
@@ -113,7 +123,7 @@ void loop() {
     logMessage("Sending call");
     digitalWrite(LED, HIGH);
     if (manager.sendtoWait(call, 10, RH_BROADCAST_ADDRESS)) {
-      logMessage("Acknowledged call");
+      logMessage("Sent call");
     } else {
       logMessage("No ack on call");
     }

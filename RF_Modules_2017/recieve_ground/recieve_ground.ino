@@ -51,7 +51,7 @@ void loop()
   if (manager.available())
   {
     // Wait for a message addressed to us from the client
-    uint8_t len = sizeof(buf);
+    uint8_t len = RH_RF22_MAX_MESSAGE_LEN;
     uint8_t from;
     if (manager.recvfromAck(buf, &len, &from))
     {
