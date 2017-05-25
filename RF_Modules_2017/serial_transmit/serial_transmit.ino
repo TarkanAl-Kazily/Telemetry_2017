@@ -20,7 +20,7 @@
 
 // Define a debug macro if the DEBUG tag was set during compilation
 #ifdef DEBUG
-#define DEBUG_MESSAGE(x)
+#define DEBUG_MESSAGE(x) Serial.println(x)
 #else
 #define DEBUG_MESSAGE(x)
 #endif
@@ -28,10 +28,12 @@
 #define CLIENT_ADDRESS 1
 #define SERVER_ADDRESS 2
 
+#define DATA_BAUD 115200
+
 // The standard delay in milliseconds
 #define DELAY 250 
 // The period in milliseconds to transmit call sign - 600000 ms is 10 minutes
-#define CALL_FREQ 30000
+#define CALL_FREQ 5000
 
 #define TRANSMIT_FREQ 434.0
 #define TRANSMIT_POWER RH_RF22_RF23BP_TXPOW_30DBM
@@ -61,9 +63,13 @@ void logBuf(uint8_t *buf, int len);
 void logMessage(char *msg);
 
 void setup() {
+#ifdef DEBUG
+  Serial.begin(9600);
+#endif
   DEBUG_MESSAGE(RH_RF22_MAX_MESSAGE_LEN);
   DEBUG_MESSAGE("\n");
 
+  delay(2000);
   if (!manager.init()) {
     // Init failed
     logMessage("Init failed");
@@ -75,19 +81,20 @@ void setup() {
   driver.setTxPower(TRANSMIT_POWER);
   Serial3.begin(9600);
   Serial3.print("Beginning test\r");
+  Serial1.begin(DATA_BAUD);
   time = millis();
 }
 
 void loop() {
   if (Serial1.available() > 0) {
     // Read the data from the Serial port
-    uint8_t result = Serial.readBytes((char*) data, sizeof(data));
+    uint8_t result = Serial1.readBytes((char*) data, sizeof(data));
     // If any data was read
     if (result != 0) {
       // log the data
       logBuf(data, result);
       // and send the data
-      if (manager.sendtoWait(data, result, SERVER_ADDRESS)) {
+      if (manager.sendtoWait(data, result, RH_BROADCAST_ADDRESS)) {
         logMessage("Acknowledged msg");
       } else {
         logMessage("No ack on msg");
@@ -98,7 +105,7 @@ void loop() {
 
   if (millis() - time > CALL_FREQ) {
     logMessage("Sending call");
-    if (manager.sendtoWait(call, 10, SERVER_ADDRESS)) {
+    if (manager.sendtoWait(call, 10, RH_BROADCAST_ADDRESS)) {
       logMessage("Acknowledged call");
     } else {
       logMessage("No ack on call");
