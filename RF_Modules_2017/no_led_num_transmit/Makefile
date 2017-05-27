@@ -1,0 +1,5 @@
+BOARD_TAG    = teensy31
+ARDUINO_LIBS = RadioHead SPI
+CPPFLAGS += -D RH_RF22_MAX_MESSAGE_LEN=200
+
+include ${ARDMK_DIR}/Teensy.mk

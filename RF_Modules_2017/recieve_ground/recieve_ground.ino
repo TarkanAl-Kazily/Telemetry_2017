@@ -34,6 +34,7 @@ RHReliableDatagram manager(driver, SERVER_ADDRESS);
 void setup() 
 {
   Serial.begin(9600);
+  Serial.println("STARTING");
   delay(2000);
   if (!manager.init())
     Serial.println("init failed");
