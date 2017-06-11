@@ -28,7 +28,7 @@
 #define SERVER_ADDRESS 2
 
 // The standard delay in milliseconds
-#define DELAY 250 
+#define DELAY 1000 
 // The period in milliseconds to transmit call sign - 600000 ms is 10 minutes
 #define CALL_FREQ 300000
 
