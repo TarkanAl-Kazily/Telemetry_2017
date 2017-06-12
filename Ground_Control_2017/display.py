@@ -546,11 +546,10 @@ class Graph:
 
     # adds a data point and redraws graph
     def update(self, data, time): # takes a data point and redraws the graph
-        if len(self.points) == 0:
+        if len(self.points) == 0: # no points currently
             self.points.append(Point(0, data * self.yLength / self.currentYMax))
             self.oldTime = time
             self.init_time = time
-            #self.oldTime = time_mod.time()
         else:
             ''' 
             self.points.append(Point(self.points[-1].getX() + self.tLength * 
@@ -561,18 +560,19 @@ class Graph:
             self.points.append(Point(self.points[-1].getX() + self.tLength * 
                                     ((time - self.init_time) / 
                                      self.currentTMax) * self.x_scale_factor, 
-                                     data * (self.yLength / self.currentYMax) *
-                                     self.y_scale_factor))
-        print str(time) + " " + str(data)
+                                     data * (self.yLength / self.currentYMax)))
+        
+        #print str(time) + " " + str(data)
             #self.oldTime = time_mod.time()
         self.time = time
         doRedraw = False
         
+        # check if too long for y axis
         while(data > self.currentYMax or data < (-1 * self.currentYMax)):
             doRedraw = True
             # extends y-axis  by 1.5 each time max data 
             # is reached (change later?)
-            self.currentYMax  = self.currentYMax * 1.5
+            self.currentYMax  = self.currentYMax * 2
             old_sf = self.y_scale_factor
             self.y_scale_factor = self.initYMax / self.currentYMax
             
@@ -580,7 +580,7 @@ class Graph:
                 self.points[i] = Point(self.points[i].getX(), 
                                        self.points[i].getY() * (1/old_sf) * 
                                        self.y_scale_factor)
-                
+        #check if too long for x axis
         while self.points[-1].getX() > self.tLength:
             doRedraw = True
             # extends t-axis 10 seconds each time the max time 
@@ -643,7 +643,6 @@ class Graph:
                 l.draw(self.window)
                 self.displayLines.append(l)
                 oldP = p
-        #print("REDREW!")
         
     '''
     @todo: turn calls into a variable assignment
