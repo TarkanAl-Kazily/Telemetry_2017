@@ -20,7 +20,7 @@
 
 // Define a debug macro if the DEBUG tag was set during compilation
 #ifdef DEBUG
-#define DEBUG_MESSAGE(x) Serial.println(x)
+#define DEBUG_MESSAGE(x) Serial.print(x)
 #else
 #define DEBUG_MESSAGE(x)
 #endif
@@ -28,12 +28,13 @@
 #define CLIENT_ADDRESS 1
 #define SERVER_ADDRESS 2
 
+// For communicating with the data diagnostic sensors
 #define DATA_BAUD 115200
 
 // The standard delay in milliseconds
-#define DELAY 250 
+#define DELAY 1000
 // The period in milliseconds to transmit call sign - 600000 ms is 10 minutes
-#define CALL_FREQ 5000
+#define CALL_FREQ 600000
 
 #define TRANSMIT_FREQ 434.0
 #define TRANSMIT_POWER RH_RF22_RF23BP_TXPOW_30DBM
@@ -79,8 +80,12 @@ void setup() {
   // Defaults after init are 434.0MHz, 0.05MHz AFC pull-in, modulation FSK_Rb2_4Fd36
   driver.setFrequency(TRANSMIT_FREQ);
   driver.setTxPower(TRANSMIT_POWER);
+
+  // Data logger
   Serial3.begin(9600);
   Serial3.print("Beginning test\r");
+
+  // Diagnostics
   Serial1.begin(DATA_BAUD);
   time = millis();
 }
@@ -90,7 +95,7 @@ void loop() {
     // Read the data from the Serial port
     uint8_t result = Serial1.readBytes((char*) data, sizeof(data));
     // If any data was read
-    if (result != 0) {
+    if (result > 0) {
       // log the data
       logBuf(data, result);
       // and send the data

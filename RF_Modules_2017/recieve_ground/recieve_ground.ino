@@ -60,7 +60,6 @@ void loop()
       DEBUG_MESSAGE(from);
       DEBUG_MESSAGE(": ");
       Serial.write(buf, len);
-      Serial.write('\n');
     }
   }
 }
