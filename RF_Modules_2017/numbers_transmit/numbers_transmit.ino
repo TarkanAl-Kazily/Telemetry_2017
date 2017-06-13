@@ -65,30 +65,43 @@ unsigned int count = 0;
 void printAck(uint8_t from);
 
 // Logs a buffer to the SD card
-void logBuf(uint8_t *buf, int len);
+void logBuf(const uint8_t *buf, int len);
 
 // Logs a string to the SD card
-void logMessage(char *msg);
+void logMessage(const char *msg);
 
 // Fills the given buffer with the count variable in the desired format
-void makeCountBuf(uint8_t buf[]);
+void makeCountBuf(uint8_t buf[], unsigned int count);
 
 /****************** BEGIN CODE ******************/
 
 void setup() {
+  Serial.begin(9600);
+
+#if 0
+  // Commented out for testing
   pinMode(LED, OUTPUT);
-  for (int i=0 ; i < 5; i++) {
+  for (int i=0 ; i < 1; i++) {
     digitalWrite(LED, HIGH);
     delay(500);
     digitalWrite(LED, LOW);
     delay(500);
   }
+#else
+  delay(1000);
+#endif
+
+  Serial.println("setup(): Starting.");
 
   if (!manager.init()) {
     // Init failed
-    digitalWrite(LED, HIGH);
+    // digitalWrite(LED, HIGH);
+    Serial.println("setup(): Manager init failed!");
     while (1);
   }
+
+  Serial.println("setup(): Manager initialized.");
+
   // Defaults after init are 434.0MHz, 0.05MHz AFC pull-in, modulation FSK_Rb2_4Fd36
   driver.setFrequency(TRANSMIT_FREQ);
   driver.setTxPower(TRANSMIT_POWER);
@@ -97,28 +110,34 @@ void setup() {
   Serial3.begin(9600);
   Serial3.println("Beginning test");
   time = millis();
+
+  Serial.println("setup(): Complete.");
 }
 
 void loop() {
   count++;
-  if (count > 10000000) {
+  if (count > 65534) {
     count = 0;
   }
   
-  makeCountBuf(data);
+  makeCountBuf(data, count);
+  Serial.println((char *)data);
   logBuf(data, 12);
 
-  digitalWrite(LED, HIGH);
+  // digitalWrite(LED, HIGH);
 
   // Send message as a broadcast - do not block for a confirmation
   if (manager.sendtoWait(data, 12, RH_BROADCAST_ADDRESS)) {
     logMessage("Sent msg");
+    Serial.println("loop(): Message sent.");
   } 
   
-  digitalWrite(LED, LOW);
+  // digitalWrite(LED, LOW);
 
   delay(DELAY);
 
+#if 0
+  // Commented out for testing
   if (millis() - time > CALL_FREQ) {
     logMessage("Sending call");
     digitalWrite(LED, HIGH);
@@ -131,23 +150,25 @@ void loop() {
     time = millis();
     delay(DELAY);
   }
+#endif
 }
 
-void logBuf(uint8_t *buf, int len) {
+void logBuf(const uint8_t *buf, int len) {
   Serial3.print(millis());
   Serial3.print("ms:");
   Serial3.write(buf, len);
   Serial3.write(13);
 }
 
-void logMessage(char *msg) {
+void logMessage(const char *msg) {
   Serial3.print(millis());
   Serial3.print("ms:");
   Serial3.print(msg);
   Serial3.write(13);
 }
 
-void makeCountBuf(uint8_t buf[]) {
+// Fills in buf[] with 12 characters in the form "!A:########;"
+void makeCountBuf(uint8_t buf[], unsigned int count) {
   buf[0] = '!';
   buf[1] = 'A';
   buf[2] = ':';
@@ -158,4 +179,5 @@ void makeCountBuf(uint8_t buf[]) {
     num /= 10;
   }
   buf[11] = ';';
+  buf[12] = '\0';
 }
