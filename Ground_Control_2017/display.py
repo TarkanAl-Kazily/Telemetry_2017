@@ -272,7 +272,7 @@ def add_vert_bar(args, cont_dict, window):
         print "Error: Bar name too long"
         return
     if (args[5] not in colors.COLORS):
-        print "Illegal color."
+        print "Illegal color: " + str(args[5])
         return
         
     if (args[0] in cont_dict):
@@ -311,7 +311,7 @@ def add_hor_bar(args, cont_dict, window):
         print "Error: Bar name too long"
         return
     if (args[5] not in colors.COLORS):
-        print "Illegal color."
+        print "Illegal color: " + str(args[5])
         return
     if (args[0] in cont_dict):
         container = cont_dict[args[0]]
@@ -328,7 +328,8 @@ def add_hor_bar(args, cont_dict, window):
         #Unsafe casting: Add checking
         container.add(
         DataWithBar(window, 
-                    Point(int(args[6]), int(args[7])), 
+                    Point(int(args[6]) + int(args[8]) / 2,
+                          int(args[7]) + int(args[9]) / 2), 
                     args[3], 
                     Point(int(args[6]), int(args[7])), 
                     Point(int(args[6])+int(args[8]), int(args[7])+int(args[9])),

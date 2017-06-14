@@ -6,7 +6,7 @@ import time
 baudrate=115200
 inputFile = "sample_input.txt"
 outputFile = "log.txt"
-regex = "![A-Z0-9]{1}:[-.0-9]+;"
+regex = "![A-Z0-9]{1}[: ][-.0-9]+;"
 #"![A-Z0-9]{1}:[.0-9]+;"
 #use re.findall to split input strings
 
@@ -79,7 +79,12 @@ class Parser():
                     assert(data_string[-1] == ';')
                     #take away the side markers 
                     data_string = re.sub('[!;]', '', data_string)
+                    #split down middle
                     vals = data_string.split(':')
+                    
+                    #ONLY TO DEAL WITH ERROR WITH SPACE ERROR
+                    if (len(vals) == 1):
+                        vals = data_string.split(' ')
                     type = vals[0]
                     #create a tuple of the data type and the timestamp
                     measurement = (vals[1], timestamp)

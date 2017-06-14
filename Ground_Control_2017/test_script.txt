@@ -12,28 +12,30 @@
 #change_port: PORTNAME
 #change_baudrate: BAUDRATE
 
-new_cont: graph_lower_left 5 250 600 345
-add_graph: graph_lower_left (L) Time Alt pink 75 525 250 400 5 1000
+new_cont: graph_lower_left 5 200 590 395
+add_graph: graph_lower_left (L) Time Alt blue 75 525 250 500 5 1000
 
-new_cont: accel_upper_left 5 5 400 240
+new_cont: accel_upper_left 5 5 590 190
 add_field: accel_upper_left (A) 20 m/s^2 X-ACEL 250 25
 add_field: accel_upper_left (B) 20 m/s^2 Y-ACEL 250 65
 add_field: accel_upper_left (C) 20 m/s^2 Z-ACEL 250 105
 
-new_cont: mag_upper_mid 410 5 400 240
-add_field: accel_upper_left (D) 20 muT X-MAGN 655 25
-add_field: accel_upper_left (E) 20 muT Y-MAGN 655 65
-add_field: accel_upper_left (F) 20 muT Z-MAGN 655 105
+#new_cont: mag_upper_mid 410 5 400 240
+#add_field: accel_upper_left (D) 20 muT X-MAGN 655 25
+#add_field: accel_upper_left (E) 20 muT Y-MAGN 655 65
+#add_field: accel_upper_left (F) 20 muT Z-MAGN 655 105
 
-new_cont: rot_upper_right 815 5 380 240
-add_field: accel_upper_left (G) 20 rad/s X-ROTA 1000 25
-add_field: accel_upper_left (H) 20 rad/s Y-ROTA 1000 65
-add_field: accel_upper_left (I) 20 rad/s Z-ROTA 1000 105
+new_cont: rot_upper_right 605 5 590 240
+add_field: accel_upper_left (G) 20 rad/s X-ROTA 900 25
+add_field: accel_upper_left (H) 20 rad/s Y-ROTA 900 65
+add_field: accel_upper_left (I) 20 rad/s Z-ROTA 900 105
+add_field: accel_upper_left (LA) 20 deg LATITUDE 900 145
+add_field: accel_upper_left (LO) 20 deg LONGITUDE 900 195
 
 new_cont: other_lower_right 610 250 585 345
 #Not finished, update placement params
-add_hor_bar: upper_left (D) 300 kpa Press purple 750 200 100 20
-add_hor_bar: upper_left (D) 500 degF Temp green 100 100 100 20
+add_hor_bar: other_lower_right (P) 3000 kpa Press tomato 750 400 400 20
+add_hor_bar: other_lower_right (T) 500 degF Temp green2 750 500 400 20
  
 change_port: /dev/ttyACM0
 change_baudrate: 9600
