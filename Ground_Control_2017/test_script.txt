@@ -1,4 +1,39 @@
-new_cont: main 5 5 500 500
-add_field: main (A) 18 counts test 100 100
-change_port: COM3
+#Final copy of the data telemetry interface
+#
+# Note, All types should be in cartesian format i.e.
+# (type_1, type_2, type_3) 
+#
+#Commands:
+#new_cont: CONTNAME ORIGIN_X ORIGIN_Y LENGTH HEIGHT
+#add_graph: CONTNAME TYPES X_LABEL Y_LABEL COLOR ORIGIN_X ORIGIN_Y LENGTH HEIGHT MAX_X MAX_Y
+#add_vert_bar: CONTNAME TYPES MAX UNIT LABEL COLOR ORIGIN_X ORIGIN_Y LENGTH HEIGHT
+#add_hor_bar: CONTNAME TYPES MAX UNIT LABEL COLOR ORIGIN_X ORIGIN_Y LENGTH HEIGHT
+#add_field: CONTNAME TYPES TEXTSIZE UNIT TEXT ORIGIN_X ORIGIN_Y
+#change_port: PORTNAME
+#change_baudrate: BAUDRATE
+
+new_cont: graph_lower_left 5 250 600 345
+add_graph: graph_lower_left (L) Time Alt pink 75 525 250 400 5 1000
+
+new_cont: accel_upper_left 5 5 400 240
+add_field: accel_upper_left (A) 20 m/s^2 X-ACEL 250 25
+add_field: accel_upper_left (B) 20 m/s^2 Y-ACEL 250 65
+add_field: accel_upper_left (C) 20 m/s^2 Z-ACEL 250 105
+
+new_cont: mag_upper_mid 410 5 400 240
+add_field: accel_upper_left (D) 20 muT X-MAGN 655 25
+add_field: accel_upper_left (E) 20 muT Y-MAGN 655 65
+add_field: accel_upper_left (F) 20 muT Z-MAGN 655 105
+
+new_cont: rot_upper_right 815 5 380 240
+add_field: accel_upper_left (G) 20 rad/s X-ROTA 1000 25
+add_field: accel_upper_left (H) 20 rad/s Y-ROTA 1000 65
+add_field: accel_upper_left (I) 20 rad/s Z-ROTA 1000 105
+
+new_cont: other_lower_right 610 250 585 345
+#Not finished, update placement params
+add_hor_bar: upper_left (D) 300 kpa Press purple 750 200 100 20
+add_hor_bar: upper_left (D) 500 degF Temp green 100 100 100 20
+ 
+change_port: /dev/ttyACM0
 change_baudrate: 9600

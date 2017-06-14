@@ -2,8 +2,7 @@ import graphics as gw
 import time as time_mod
 import math
 import threading
-import utility as util
-import heapq
+import utility_test as util
 import colors
 
 # Do I need this???
@@ -27,8 +26,7 @@ cTempMax = 500
 pressMax = 1000
 sampleTime = 0.5 # time between samples in seconds
 
-
-portName = "COM3"
+portName = "/dev/ttyACM0"
 location = [0.0,0.0] # GPS location of device
 #Container box buffer
 buffer = 5
@@ -49,6 +47,7 @@ class DataWindow(threading.Thread):
         
         #Grab window from kwargs
         self.window = kwargs['window']
+        self.path = kwargs['path']
         self.types_to_objects = {}
         
         #initialize parser
@@ -56,7 +55,7 @@ class DataWindow(threading.Thread):
         print "Serial is open: " + str(self.parser.open_port(portName))
         
         #make a bunch of containers
-        self.containers = load_layout("test_script.txt", self)
+        self.containers = load_layout(self.path, self)
         
         #Thread events
         self.running = threading.Event()
@@ -148,6 +147,17 @@ class DataWindow(threading.Thread):
                 self.types_to_objects[type].append(object)
             else:
                 self.types_to_objects.update({type:[object]})
+                
+    def update_path(self, pathName):
+        if (self.path == pathName):
+            return
+        self.path = pathName
+        
+        # remake all your containers
+        self.containers = load_layout(self.path, self)
+        self.setUp()
+        
+        
             
 #-------------------------------------------------------------------------------
 #        MODULE FUNCTIONS

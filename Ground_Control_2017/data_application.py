@@ -7,6 +7,7 @@ import graphics as gw
 import display as disp
 import threading
 import time
+from tkFileDialog import askopenfilename
 
 class ThreadManager():
 	
@@ -100,9 +101,10 @@ class Application(tk.Frame):
 		self.windows={}#Dictionary to hold windows
 		self.windowList = [None] * 5
 		self.tm = ThreadManager() #house all the threads
+		self.pathName = 'test_script.txt'
 		self.grid(sticky=tk.N+tk.S+tk.E+tk.W)
 		self.createWidgets()
-		
+
 		master.minsize(width=666, height=666)#Change to new window
 
 	def createWidgets(self):
@@ -116,12 +118,28 @@ class Application(tk.Frame):
 		self.quitB = tk.Button(self, text='Quit', command=self.quit)
 		self.quitB.grid(row=0, column=8, sticky=tk.N+tk.E)
 		
+		#File selection button
+		self.fileS = tk.Button(self, text='Select Script', command=self.fsel)
+		self.fileS.grid(row=0, column=7, sticky=tk.N+tk.E)
+		
 		#Unnecessary without multi window functionality 
 		#Window button
 		#self.addWinB = tk.Button(self, text='New Window', command=self.insertWindow)
 		#self.addWinB.grid(row=0, column=6, columnspan=2,sticky=tk.N+tk.E)
+		
 		self.insertWindow()
 
+	# Method for opening a filepath
+	def fsel(self):
+		if (not self.tm.isRunning(self.activeName)):
+			filename = askopenfilename()
+			self.pathName = filename
+			print filename
+		else:
+			print 'thing running no blocking'
+
+	# Overrides the default functionality for quitting the Frame
+	# while attempting to shut down all currently active threads
 	def quit(self):
 		try:
 			self.stop_all()
@@ -129,7 +147,8 @@ class Application(tk.Frame):
 			print "Error: deletion issues"
 		finally:
 			tk.Frame.quit(self)
-	
+
+	# Makes a new window in the scope of the Frame
 	def insertWindow(self):
 		#limit to the number of threads which can be run simultaneously
 		if (len(self.windows) < 1):
@@ -147,25 +166,25 @@ class Application(tk.Frame):
 			#self.winOM.grid(row=3, column=0)
 			
 			#Start Test button
-			self.winStartB = tk.Button(self, text='Start Test', command=self.start_test)
+			self.winStartB = tk.Button(self, text='Start Test',
+									   command=self.start_test)
 			self.winStartB.grid(row=1, column=6)
 			
 			#pause Test button
-			self.winPauseB = tk.Button(self, text='Pause', command=self.pause_test)
+			self.winPauseB = tk.Button(self, text='Pause',
+									   command=self.pause_test)
 			self.winPauseB.grid(row=1, column=7)
 			
 			#Stop Test button
 			self.winStopB = tk.Button(self, text='Stop', command=self.stop_test)
 			self.winStopB.grid(row=1, column=8)
-			
 		
-	
 			root.update()
-			
+
+	# Initializes a new window with the given name
 	def setUpWindow(self, name):
 		#Set up window and display
-
-		newWin = gw.GraphWin("Data",1200,600, master=self)
+		newWin = gw.GraphWin("Data",1200 ,600 , master=self)
 		newWin.grid(row=2, column=0, columnspan=20, rowspan=5)
 
 		#set as active window and add to window dictionary
@@ -173,40 +192,48 @@ class Application(tk.Frame):
 		self.activeName = name
 		self.windows.update({name : newWin})
 		
-		dWin = disp.DataWindow(name=name, kwargs={'window':self.activeWindow})
+		dWin = disp.DataWindow(name=name, kwargs={'window':self.activeWindow,
+												  'path':self.pathName})
 		dWin.setUp()
 		
 		self.tm.addThread(name, dWin)
-	
+
+	# Starts running the test and collecting data in the active window
 	def start_test(self):
-		name = self.activeName 
+		name = self.activeName
 		if(not self.tm.isRunning(name)):
 			if (self.tm.getThread(self.activeName) == None):
 				self.setUpWindow(self.activeName)
 			t1 = self.tm.getThread(self.activeName)
+			t1.update_path(self.pathName)
 			t1.start()
 			self.tm.addThread(name, t1)
 		else:
 			self.tm.resumeThread(name)
-		
+
+	# Puts a pause on the execution of the data window
 	def pause_test(self):
 		self.tm.pauseThread(self.activeName)
-		
+
+	# Stops the currently running thread if it is active
 	def stop_test(self):
 		self.tm.stopThread(self.activeName)
 
+	# Switches the active window to another window
+	# Now defunct since we are using only one window
 	def selectOpt(self, value):
 		print "Swithcing active window to " + value
 		self.activeWindow = self.windows[value]
 		self.activeName = value
 		disp.setUp(self.activeWindow)
 		root.update()
-		
+
+	# Halts the execution of all threads and windows
 	def stop_all(self):
 		print "Deleting all threads"
 		for name in self.tm.threads.keys():
 			self.tm.stopThread(name)
-	
+
 #-------------------------------------------------------------------------------
 # SCRIPT TO RUN
 #-------------------------------------------------------------------------------
@@ -215,6 +242,3 @@ if __name__ == "__main__":
 	app = Application(root)
 	app.master.title('SARP Data Dominator')
 	app.mainloop()
-
-
-

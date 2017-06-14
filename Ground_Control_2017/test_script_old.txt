@@ -1,0 +1,6 @@
+new_cont: main 5 5 500 500
+add_field: main (A) 18 counts test 100 100
+#change_port: COM3
+#change_baudrate: 9600
+new_cont: right 510 5 500 500
+add_graph: right (A) Time Alt blue 570 400 250 400 5 20
