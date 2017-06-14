@@ -2,7 +2,7 @@ import graphics as gw
 import time as time_mod
 import math
 import threading
-import utility_test as util
+import utility as util
 import colors
 
 # Do I need this???
