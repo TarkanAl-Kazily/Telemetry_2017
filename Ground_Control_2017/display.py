@@ -2,7 +2,7 @@ import graphics as gw
 import time as time_mod
 import math
 import threading
-import utility as util
+import utility_test as util
 import colors
 
 # Do I need this???
@@ -18,7 +18,6 @@ Entry  = gw.Entry
 Image = gw.Image
 
 #Set up Global
-inputFile = "input1.txt" # name of file to read input from
 outputFile = "savedData.txt" # name of file where data is recorded
 aTempMax = 1000 # the temp/press when the bars are full
 bTempMax = 50
@@ -80,22 +79,23 @@ class DataWindow(threading.Thread):
                     data = self.parser.get_data_tuple(key)
                     print str(data) + " " + key
                     if data != None:
-                        #doota is a legitimate name for a
-                        #variable, TODD MEARGLE!
-                        doota = float(data[0])
                         data_time = data[1]
+                        try:
+                            float_data = float(data[0])
+                        except:
+                            print "Cannot convert " + data[0] + " to float"
+                            continue
                         #update all the items linked to this data type
                         for item in self.types_to_objects[key]:
-                            item.update(doota, data_time)
-            
+                            item.update(float_data, data_time)
+            '''
             # reports if render time is greater than sample time.
             if time_mod.time() - timeStart > sampleTime:
                 print("TIME! " + str(round(time_mod.time() - timeStart, 3)))
             while time_mod.time() - timeStart < sampleTime:
                 time_mod.sleep(0.03)
-                
-            print ""
-            
+            '''
+
             #pauses runtime only checking the rm connection
             while self.paused.isSet():
                 time_mod.sleep(0.03)
@@ -116,21 +116,6 @@ class DataWindow(threading.Thread):
                 container.setUp()
             except:
                 print ("Illegal Container")
-    """
-    def __register_type_callback__(self, object):
-        '''
-        @todo: enforce that object has type field and update method
-        '''
-        type = object.type
-        
-        '''
-        @todo: can be reduced to one line i think
-        '''
-        if (self.types_to_objects.has_key(type)):
-            self.types_to_objects[type].append(object)
-        else:
-            self.types_to_objects.update({type:[object]})\
-    """
             
     def __register_type_callback__(self, object):
         '''
@@ -152,7 +137,7 @@ class DataWindow(threading.Thread):
         if (self.path == pathName):
             return
         self.path = pathName
-        
+
         # remake all your containers
         self.containers = load_layout(self.path, self)
         self.setUp()

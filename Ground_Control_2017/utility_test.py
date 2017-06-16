@@ -7,6 +7,7 @@ baudrate=115200
 inputFile = "sample_input.txt"
 outputFile = "log.txt"
 regex = "![A-Z0-9]{1}[: ][-.0-9]+;"
+gpsregex = "\$[A-Z]{5},(?:[^,]*,){10,14}[^,]*"
 #"![A-Z0-9]{1}:[.0-9]+;"
 #use re.findall to split input strings
 
@@ -58,10 +59,7 @@ class Parser():
             @raise IllegalStateException: if the serial port is not open 
         '''
         
-        if (self.is_open):
-            temp = self.ser.read_all().strip()
-        else:
-            temp = self.input.readline().strip()
+        temp = self.input.readline().strip()
         
         timestamp = time.time()
         
@@ -75,25 +73,59 @@ class Parser():
             
             if parsed_output != None:
                 for data_string in parsed_output:
-                    assert(data_string[0] == '!')
-                    assert(data_string[-1] == ';')
-                    #take away the side markers 
-                    data_string = re.sub('[!;]', '', data_string)
-                    #split down middle
-                    vals = data_string.split(':')
-                    
-                    #ONLY TO DEAL WITH ERROR WITH SPACE ERROR
-                    if (len(vals) == 1):
-                        vals = data_string.split(' ')
-                    type = vals[0]
-                    #create a tuple of the data type and the timestamp
-                    measurement = (vals[1], timestamp)
-                    if not self.dataDict.has_key(type):
-                        #add empty queue of new data type
-                        temp = {type : deque([])}
-                        self.dataDict.update(temp)
-                    #Add the measurement to the queue
-                    self.add_to_queue(type, measurement)
+                    if (data_string[0] == '$'): #check if its a gps string
+                        str_vec = data_string.split(",")
+                        # check which kind of gps string
+                        if (str_vec[0] == "$GPRMC"):
+                            #assert(len(str_vec) == 12)
+                            if (str_vec[2] != 'A'): # not a valid gps read
+                                continue
+                            lat = str_vec[3]
+                            if (str_vec[4] == 'S'):
+                                lat *= -1
+                            lon = str_vec[5]
+                            if (str_vec[6] == 'E'):
+                                lon *= -1
+                        elif (str_vec[0] == "$GPGGA"):
+                            #assert(len(str_vec) == 15)
+                            if (str_vec[2] != 'A'): # not a valid gps read
+                                continue
+                            lat = str_vec[3]
+                            if (str_vec[4] == 'S'):
+                                lat *= -1
+                            lon = str_vec[5]
+                            if (str_vec[6] == 'E'):
+                                lon *= -1
+                        else:
+                            print "Unknown GPS token: " + str_vec[0]
+                            continue
+                        
+                        # Add the data to the Queues
+                        self.add_to_queue('LA', lat)
+                        self.add_to_queue('LO', lon)
+                        
+                    elif (data_string[0] == '!'): #check if it's data
+                        #take away the side markers 
+                        data_string = re.sub('[!;]', '', data_string)
+                        #split down middle
+                        vals = data_string.split(':')
+                        
+                        #ONLY TO DEAL WITH ERROR WITH SPACE ERROR
+                        if (len(vals) == 1):
+                            vals = data_string.split(' ')
+                        
+                        type = vals[0]
+                        #create a tuple of the data type and the timestamp
+                        measurement = (vals[1], timestamp)
+                        
+                        if (vals[1] == '6.24B'):
+                            print "stop"
+                        
+                        #Add the measurement to the queue
+                        self.add_to_queue(type, measurement)
+                    else:
+                        print "Unrecognized string: " + data_string
+                        
 
     def is_empty(self, queue):
         return len(queue) == 0
@@ -112,22 +144,23 @@ class Parser():
 
     def parse_string_multiple(self, string):
         '''
-            Parses an input of the correct format into a list
-            of data types and values
+            Parses an input to make a list of well formed
+            data values.
             @requires string is not None
             @param takes in a string of multiple data values which are 
             concatenated and of the form !X:DATAXXXXX;
-            @return: A even list of strings with even indices corresponding
-            to a data type and odd indices as float data values. Returns
+            @return: A list of strings of the form !TYPE:DATA; Returns
             None if no usable data points could be parsed
         '''
         string = string.strip()
-        parsed_string = re.findall(regex, string)
-
-        if (parsed_string == []):
+        parse_list = re.findall(regex, string)
+        temp = re.findall(gpsregex, string)
+        parse_list += temp
+        
+        if (parse_list == []):
             return None
-
-        return parsed_string
+        
+        return parse_list
 
     def add_to_queue(self, dataType, value):
         '''
@@ -136,6 +169,10 @@ class Parser():
             @modifies: if the queueName is not None and is not in the dictionary 
             of queues, add it to the dictionary and update;
         '''
+        if not self.dataDict.has_key(dataType):
+            #add empty queue of new data type
+            temp = {dataType : deque([])}
+            self.dataDict.update(temp)
         if (value != None):
             self.dataDict.get(dataType).append(value)
             self.dataItemsAvailable += 1

@@ -29,8 +29,8 @@ new_cont: rot_upper_right 605 5 590 240
 add_field: accel_upper_left (G) 20 rad/s X-ROTA 900 25
 add_field: accel_upper_left (H) 20 rad/s Y-ROTA 900 65
 add_field: accel_upper_left (I) 20 rad/s Z-ROTA 900 105
-add_field: accel_upper_left (LA) 20 deg LATITUDE 900 145
-add_field: accel_upper_left (LO) 20 deg LONGITUDE 900 195
+add_field: accel_upper_left (LA) 20 N LATITUDE 900 145
+add_field: accel_upper_left (LO) 20 W LONGITUDE 900 195
 
 new_cont: other_lower_right 610 250 585 345
 #Not finished, update placement params
