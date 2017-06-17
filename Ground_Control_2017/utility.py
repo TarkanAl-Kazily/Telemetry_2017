@@ -65,7 +65,8 @@ class Parser():
         
         if len(serial_input) > 0 :
             #write input to output file
-            self.output.write(serial_input + " " + time.asctime(time.localtime()) + "\n")
+            self.output.write(serial_input + " " + 
+                              time.asctime(time.localtime()) + "\n")
             self.output.flush()
             
             #Parse the input

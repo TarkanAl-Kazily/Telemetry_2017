@@ -13,7 +13,7 @@
 #change_baudrate: BAUDRATE
 
 new_cont: graph_lower_left 5 200 590 395
-add_graph: graph_lower_left (L) Time Alt blue 75 525 250 500 5 1000
+add_graph: graph_lower_left (L) Time Alt blue 75 525 250 500 5 35000
 
 new_cont: accel_upper_left 5 5 590 190
 add_field: accel_upper_left (A) 20 m/s^2 X-ACEL 250 25
@@ -26,14 +26,14 @@ add_field: accel_upper_left (C) 20 m/s^2 Z-ACEL 250 105
 #add_field: accel_upper_left (F) 20 muT Z-MAGN 655 105
 
 new_cont: rot_upper_right 605 5 590 240
-add_field: accel_upper_left (G) 20 rad/s X-ROTA 900 25
-add_field: accel_upper_left (H) 20 rad/s Y-ROTA 900 65
-add_field: accel_upper_left (I) 20 rad/s Z-ROTA 900 105
-add_field: accel_upper_left (LA) 20 N LATITUDE 900 145
-add_field: accel_upper_left (LO) 20 W LONGITUDE 900 195
+add_field: rot_upper_right (G) 20 rad/s X-ROTA 825 30
+add_field: rot_upper_right (H) 20 rad/s Y-ROTA 825 70
+add_field: rot_upper_right (I) 20 rad/s Z-ROTA 825 110
+add_field: rot_upper_right (LA) 20 N LATITUDE 825 150
+add_field: rot_upper_right (LO) 20 W LONGITUDE 825 190
+add_vert_bar: rot_upper_right (L) 35000 ft Alt RoyalBlue1 1075 20 20 200
 
-new_cont: other_lower_right 610 250 585 345
-#Not finished, update placement params
+new_cont: other_lower_right 605 250 590 345
 add_hor_bar: other_lower_right (P) 3000 kpa Press tomato 750 400 400 20
 add_hor_bar: other_lower_right (T) 500 degF Temp green2 750 500 400 20
  

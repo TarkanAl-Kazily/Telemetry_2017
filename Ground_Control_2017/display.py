@@ -51,7 +51,7 @@ class DataWindow(threading.Thread):
         
         #initialize parser
         self.parser = util.Parser()
-        print "Serial is open: " + str(self.parser.open_port(portName))
+        #print "Serial is open: " + str(self.parser.open_port(portName))
         
         #make a bunch of containers
         self.containers = load_layout(self.path, self)
@@ -77,7 +77,6 @@ class DataWindow(threading.Thread):
                 #see if new data came in
                 for key in self.types_to_objects.keys():
                     data = self.parser.get_data_tuple(key)
-                    print str(data) + " " + key
                     if data != None:
                         data_time = data[1]
                         try:
@@ -88,13 +87,13 @@ class DataWindow(threading.Thread):
                         #update all the items linked to this data type
                         for item in self.types_to_objects[key]:
                             item.update(float_data, data_time)
-            '''
+
             # reports if render time is greater than sample time.
             if time_mod.time() - timeStart > sampleTime:
-                print("TIME! " + str(round(time_mod.time() - timeStart, 3)))
+                print("Graphics taxed: " + str(round(time_mod.time() - timeStart, 3)))
             while time_mod.time() - timeStart < sampleTime:
-                time_mod.sleep(0.03)
-            '''
+                time_mod.sleep(0.02)
+            
 
             #pauses runtime only checking the rm connection
             while self.paused.isSet():
@@ -178,7 +177,7 @@ def load_layout(filepath, parent):
         
         tokens = f.split(':')
         if (len(tokens) != 2):
-            print tokens
+            print "Illegal string: " + f
             continue
         function = tokens[0]
         args = tokens[1].strip().split(' ')
@@ -248,6 +247,8 @@ def add_graph(args, cont_dict, window):
         Graph(window, Point(int(args[5]), int(args[6])), int(args[7]), int(args[8]), 
                               float(args[10]), float(args[9]), args[4], 
                               args[2], args[3], types))
+    else:
+        print "No container: " + args[0]
 
 def add_vert_bar(args, cont_dict, window):
     if (len(args) != 10):
@@ -264,6 +265,7 @@ def add_vert_bar(args, cont_dict, window):
         container = cont_dict[args[0]]
         if (not check_bounds(make_rect(container.origin, container.max_x, container.max_y), 
                      make_rect(Point(int(args[6]), int(args[7])),int(args[8]),int(args[9])))):
+            print "Out of bounds"
             return
         #grab the type args
         types = (args[1])[1:-1]
@@ -282,6 +284,8 @@ def add_vert_bar(args, cont_dict, window):
                     args[5], 
                     args[4], 
                     types, 1))
+    else:
+        print "No container: " + args[0]
         
 def add_hor_bar(args, cont_dict, window):
     '''
@@ -322,6 +326,8 @@ def add_hor_bar(args, cont_dict, window):
                     args[5], 
                     args[4], 
                     types, 0))
+    else:
+        print "No container: " + args[0]
 
 def add_field(args, cont_dict, window):
     if (len(args) != 7):
@@ -340,6 +346,8 @@ def add_field(args, cont_dict, window):
         container.add(
         DataField(window, Point(int(args[5]), int(args[6])), 
               args[3], args[4],int(args[2]), types))
+    else:
+        print "No container: " + args[0]
         
 #returns true if rect_2 fits within rect_1
 def check_bounds(rect_1, rect_2):
@@ -363,6 +371,7 @@ def check_bounds(rect_1, rect_2):
 
 def make_rect(origin, length, height):
     return Rectangle(origin, Point(origin.x+length, origin.y+height))
+
 #-------------------------------------------------------------------------------
 #        CLASSES
 #-------------------------------------------------------------------------------
@@ -408,14 +417,14 @@ class DataField:
     #               unit: the unit associated with the data
     def __init__(self, window, location, unit, text="Default", text_size=15,
                  type="DEF"):
-        self.line = Text(location, "READY") #initialize text field
+        self.line = Text(location, text + " READY") #initialize text field
         self.line.setSize(text_size) #intialize text size
         self.window = window #keeps a window reference
         self.line.draw(self.window) #draws inital
         self.unit = unit
         self.location = location #Location of the field on the screen
         self.text_size = text_size # size of the text
-        self.text = text #Label
+        self.label = text #Label
         self.type = type #keeps track of type 
         self.max_len = 0 #max length to be used 
         
@@ -425,23 +434,26 @@ class DataField:
             temp = self.line.getText()
             if (len(temp) > self.max_len):
                 self.max_len = len(temp)
-            self.line.setText(str(round(data, 1)) + " " + self.unit)
-            diff = len(self.line.getText()) - self.max_len
-            if diff > 0:
-                self.line._move(diff*self.text_size*0.5, 0)
+            self.line.setText(self.label + " " + str(round(data, 1)) 
+                              + " " + self.unit)
+            #diff = len(self.line.getText()) - self.max_len
+            #if diff > 0:
+            #    self.line._move(diff*self.text_size*0.5, 0)
         else:
             self.line.setText("(No Data)")
+
         self.line.undraw()
         self.line.draw(self.window)
     
     #         window, x_start=0, y_start=0, name="default", size=15    
     def setUp(self):
-        txt = Text(Point(self.location.getX() - len(self.text) * 
-                         self.text_size * 0.9, self.location.getY()), 
-                         self.text) # Altitude text
+        #txt = Text(Point(self.location.getX() - len(self.text) * 
+                        # self.text_size * 0.9, self.location.getY()), 
+                         #self.text) # Altitude text
         
-        txt.setSize(self.text_size)
-        txt.draw(self.window)
+        #txt.setSize(self.text_size)
+        #txt.draw(self.window)
+        pass
 
 # displays data with a "temperature bar" that fills left to right based on value. 
 class DataWithBar:
