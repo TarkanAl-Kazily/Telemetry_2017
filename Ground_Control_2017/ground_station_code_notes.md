@@ -1,6 +1,16 @@
 ## display.py -- attempt to fix the inability to parse faster data streams
 line 91: commented out code that handles delaying the program loop
          Uncomment and decrease the delay to .005
+         
+lines 93, 108, 205, 268, 287, 329, 349: Added or improved debug info
+
+line 593: changed scaling of time to double rather than increment by 
+10 reducing redrawing
+
+line 545 and 527: removed obsolete varaible 'old time'
+
+update method for DataField class: changed so that everything is done as one
+instead of 2
 
 ## utility.py -- attempt to fix the broken lat/long values
 line 74: the section that parses the values
