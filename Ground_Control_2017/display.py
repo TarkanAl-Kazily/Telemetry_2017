@@ -2,7 +2,7 @@ import graphics as gw
 import time as time_mod
 import math
 import threading
-import utility as util
+import utility_test as util
 import colors
 
 # Do I need this???
@@ -29,6 +29,8 @@ portName = "/dev/ttyACM0"
 location = [0.0,0.0] # GPS location of device
 #Container box buffer
 buffer = 5
+#precision of data field values
+df_precision = 6
 
 # initialize output
 #output = open(outputFile, "a")
@@ -434,7 +436,7 @@ class DataField:
             temp = self.line.getText()
             if (len(temp) > self.max_len):
                 self.max_len = len(temp)
-            self.line.setText(self.label + " " + str(round(data, 1)) 
+            self.line.setText(self.label + " " + str(round(data, df_precision)) 
                               + " " + self.unit)
             #diff = len(self.line.getText()) - self.max_len
             #if diff > 0:
