@@ -82,22 +82,22 @@ class Parser():
                             #assert(len(str_vec) == 12)
                             if (str_vec[2] != 'A'): # not a valid gps read
                                 continue
-                            lat = str_vec[3]
+                            lat = float(str_vec[3])
                             if (str_vec[4] == 'S'):
-                                lat *= -1
-                            lon = str_vec[5]
+                                lat *= -1.0
+                            lon = float(str_vec[5])
                             if (str_vec[6] == 'E'):
-                                lon *= -1
+                                lon *= -1.0
                         elif (str_vec[0] == "$GPGGA"):
                             #assert(len(str_vec) == 15)
                             if (str_vec[2] != 'A'): # not a valid gps read
                                 continue
-                            lat = str_vec[3]
+                            lat = float(str_vec[3])
                             if (str_vec[4] == 'S'):
-                                lat *= -1
-                            lon = str_vec[5]
+                                lat *= -1.0
+                            lon = float(str_vec[5])
                             if (str_vec[6] == 'E'):
-                                lon *= -1
+                                lon *= -1.0
                         else:
                             print "Unknown GPS token: " + str_vec[0]
                             continue

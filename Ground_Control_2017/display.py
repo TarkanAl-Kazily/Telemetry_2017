@@ -2,7 +2,7 @@ import graphics as gw
 import time as time_mod
 import math
 import threading
-import utility_test as util
+import utility as util
 import colors
 
 # Do I need this???
@@ -51,7 +51,7 @@ class DataWindow(threading.Thread):
         
         #initialize parser
         self.parser = util.Parser()
-        #print "Serial is open: " + str(self.parser.open_port(portName))
+        print "Serial is open: " + str(self.parser.open_port(portName))
         
         #make a bunch of containers
         self.containers = load_layout(self.path, self)
@@ -92,12 +92,12 @@ class DataWindow(threading.Thread):
             if time_mod.time() - timeStart > sampleTime:
                 print("Graphics taxed: " + str(round(time_mod.time() - timeStart, 3)))
             while time_mod.time() - timeStart < sampleTime:
-                time_mod.sleep(0.02)
+                time_mod.sleep(0.005)
             
 
             #pauses runtime only checking the rm connection
             while self.paused.isSet():
-                time_mod.sleep(0.03)
+                time_mod.sleep(0.005)
                 self.parser.update()
             
             # updates GPS location of device and saves it as "location"
