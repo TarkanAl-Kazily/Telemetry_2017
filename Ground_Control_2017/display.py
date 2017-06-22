@@ -2,7 +2,7 @@ import graphics as gw
 import time as time_mod
 import math
 import threading
-import utility as util
+import utility_test as util
 import colors
 
 # Do I need this???
@@ -538,7 +538,7 @@ class Graph:
         self.points = [] # the data recorded and scaled
         self.displayPoints = [] # the data to be displayed
         self.displayLines = [] # the connecting lines
-        self.oldTime = 0 # tracks last time reading
+        self.init_time = 0 # tracks last time reading
         self.x_label = x_label
         self.y_label = y_label
         self.type = type
@@ -556,7 +556,6 @@ class Graph:
     def update(self, data, time): # takes a data point and redraws the graph
         if len(self.points) == 0: # no points currently
             self.points.append(Point(0, data * self.yLength / self.currentYMax))
-            self.oldTime = time
             self.init_time = time
         else:
             ''' 
@@ -569,9 +568,7 @@ class Graph:
                                     ((time - self.init_time) / 
                                      self.currentTMax) * self.x_scale_factor, 
                                      data * (self.yLength / self.currentYMax)))
-        
-        #print str(time) + " " + str(data)
-            #self.oldTime = time_mod.time()
+
         self.time = time
         doRedraw = False
         
@@ -593,7 +590,7 @@ class Graph:
             doRedraw = True
             # extends t-axis 10 seconds each time the max time 
             # is reached (change later?)
-            self.currentTMax += 10
+            self.currentTMax *= 2
             old_sf = self.x_scale_factor
             self.x_scale_factor = float(self.initTMax) / self.currentTMax
             assert(self.x_scale_factor < old_sf)

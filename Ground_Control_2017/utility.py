@@ -7,7 +7,7 @@ baudrate=9600
 inputFile = "sample_input.txt"
 outputFile = "log.txt"
 # Regular expressions for data parsing
-regex = "![A-Z0-9]{1}[: ][-.0-9]+;"
+regex = "(![A-Z0-9]{1}[: ][-.0-9]+;)"
 gpsregex = "\$[A-Z]{5},(?:[^,]*,){10,14}[^,]*"
 #"![A-Z0-9]{1}:[.0-9]+;"
 #use re.findall to split input strings
@@ -72,6 +72,7 @@ class Parser():
             #Parse the input
             parsed_output = self.parse_string_multiple(serial_input)
             
+            #put the parsed input into different data slots
             if parsed_output != None:
                 for data_string in parsed_output:
                     if (data_string[0] == '$'): #check if its a gps string

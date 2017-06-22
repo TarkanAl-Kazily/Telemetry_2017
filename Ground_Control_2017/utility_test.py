@@ -12,7 +12,6 @@ gpsregex = "\$[A-Z]{5},(?:[^,]*,){10,14}[^,]*"
 #use re.findall to split input strings
 
 class Parser():
-    
     #Initializes fields in the class
     #contains a serial object for receiving 
     #data from the radio module
@@ -65,7 +64,7 @@ class Parser():
         
         if len(temp) > 0 :
             #write input to output file
-            self.output.write(temp +"\n")
+            self.output.write(temp + " " + time.asctime(time.localtime()) + "\n")
             self.output.flush()
             
             #Parse the input
@@ -222,14 +221,19 @@ class Parser():
             return data
 
     def close(self):
-        if (self.is_open):
+        print "Clean Up"
+        try:
             self.ser.close()
-        else:
-            try:
-                self.input.close()
-            except:
-                print "Error closing filestream"
-
+        except:
+            print "Serial is not open"
+        try:
+            self.output.close()
+        except:
+            print "Output is not open"
+        try:
+            self.input.close()
+        except:
+            print "input closed"
     def change_baudrate(self, new_rate):
         self.ser.baudrate(new_rate)
 

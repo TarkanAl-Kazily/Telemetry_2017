@@ -13,7 +13,8 @@
 #change_baudrate: BAUDRATE
 
 new_cont: graph_lower_left 5 200 590 395
-add_graph: graph_lower_left (L) Time Alt blue 75 525 250 500 5 35000
+#add_graph: graph_lower_left (L) Time Alt blue 75 525 250 500 80 35000
+add_graph: graph_lower_left (L) Time Alt blue 75 525 250 500 1 500
 
 new_cont: accel_upper_left 5 5 590 190
 add_field: accel_upper_left (A) 20 m/s^2 X-ACEL 250 25
