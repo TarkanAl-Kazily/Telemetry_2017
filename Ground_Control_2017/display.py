@@ -88,17 +88,15 @@ class DataWindow(threading.Thread):
                         #update all the items linked to this data type
                         for item in self.types_to_objects[key]:
                             item.update(float_data, data_time)
-            '''
             # reports if render time is greater than sample time.
             if time_mod.time() - timeStart > sampleTime:
                 print("TIME! " + str(round(time_mod.time() - timeStart, 3)))
             while time_mod.time() - timeStart < sampleTime:
-                time_mod.sleep(0.03)
-            '''
+                time_mod.sleep(0.005)
 
             #pauses runtime only checking the rm connection
             while self.paused.isSet():
-                time_mod.sleep(0.03)
+                time_mod.sleep(0.005)
                 self.parser.update()
             
             # updates GPS location of device and saves it as "location"

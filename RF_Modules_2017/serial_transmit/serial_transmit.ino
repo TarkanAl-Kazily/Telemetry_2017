@@ -32,7 +32,7 @@
 #define DATA_BAUD 115200
 
 // The standard delay in milliseconds
-#define DELAY 1000
+#define DELAY 200
 // The period in milliseconds to transmit call sign - 600000 ms is 10 minutes
 #define CALL_FREQ 600000
 
@@ -67,7 +67,10 @@ void setup() {
 #ifdef DEBUG
   Serial.begin(9600);
 #endif
+  DEBUG_MESSAGE("STARTING VEHICLE CODE\n");
   DEBUG_MESSAGE(RH_RF22_MAX_MESSAGE_LEN);
+  DEBUG_MESSAGE("\n");
+  DEBUG_MESSAGE(CALL_FREQ);
   DEBUG_MESSAGE("\n");
 
   delay(2000);
@@ -130,6 +133,10 @@ void printAck(uint8_t from) {
 }
 
 void logBuf(uint8_t *buf, int len) {
+#ifdef DEBUG
+  Serial.write(buf, len);
+  Serial.println();
+#endif
   Serial3.print(millis());
   Serial3.print("ms:");
   Serial3.write(buf, len);
